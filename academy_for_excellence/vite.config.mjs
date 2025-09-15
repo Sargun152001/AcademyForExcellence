@@ -17,7 +17,8 @@ export default defineConfig({
     allowedHosts: ['.amazonaws.com', '.builtwithrocket.new'],
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',  
+        target:
+        'https://academyforexcellence-backend-ywc2.onrender.com',  
         changeOrigin: true,
         secure: false,
       }
