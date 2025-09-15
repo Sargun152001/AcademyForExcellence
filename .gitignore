@@ -1,0 +1,14 @@
+# Node modules
+academy_for_excellence/node_modules/
+backend/node_modules/
+
+# Environment files
+academy_for_excellence/.env
+backend/.env
+
+# Logs
+*.log
+
+# Optional build/dist folders
+academy_for_excellence/dist/
+backend/dist/
