@@ -2,6 +2,7 @@ import axios from "axios";
 
 // Proxy base URL → goes to your Node backend
 const BASE_API_URL = "/api";
+const BACKEND_URL = "https://academyfo3074back.onrender.com";
 
 // Sleep utility for retry logic
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -366,7 +367,7 @@ const toQueryString = (obj) => {
 export const getCourses = async (filters = {}) => {
   try {
     const qs = toQueryString(filters);
-    const url = `/api/Courses?$expand=Curriculams${qs}`;
+    const url = `${BACKEND_URL}/api/Courses?$expand=Curriculams${qs}`;
     console.log("📡 Full URL being called:", url);
 
     const res = await fetch(url, {
