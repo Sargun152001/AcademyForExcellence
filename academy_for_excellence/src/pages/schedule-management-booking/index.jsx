@@ -271,39 +271,39 @@ const fetchUserBookings = async () => {
   ];
 
   // Mock data for upcoming bookings
-  const mockUpcomingBookings = [
-    {
-      id: 1,
-      courseTitle: "Advanced Project Management for Large-Scale Construction",
-      date: "2025-01-15",
-      time: "09:00 AM",
-      duration: 8,
-      location: "Training Center A, Dubai",
-      status: "Confirmed",
-      bookingId: "BK-2025-001",
-      instructor: {
-        name: "Dr. Hassan Al-Mahmoud",
-        title: "Former Project Director, Emaar Properties",
-        rating: 4.9
-      },
-      specialRequirements: "Vegetarian meal, wheelchair accessible seating"
-    },
-    {
-      id: 2,
-      courseTitle: "Safety Compliance & Risk Management",
-      date: "2025-01-22",
-      time: "02:00 PM",
-      duration: 6,
-      location: "Safety Training Facility, Abu Dhabi",
-      status: "Pending",
-      bookingId: "BK-2025-002",
-      instructor: {
-        name: "Sarah Johnson",
-        title: "Safety Director, ALEC Engineering",
-        rating: 4.8
-      }
-    }
-  ];
+  // const mockUpcomingBookings = [
+  //   {
+  //     id: 1,
+  //     courseTitle: "Advanced Project Management for Large-Scale Construction",
+  //     date: "2025-01-15",
+  //     time: "09:00 AM",
+  //     duration: 8,
+  //     location: "Training Center A, Dubai",
+  //     status: "Confirmed",
+  //     bookingId: "BK-2025-001",
+  //     instructor: {
+  //       name: "Dr. Hassan Al-Mahmoud",
+  //       title: "Former Project Director, Emaar Properties",
+  //       rating: 4.9
+  //     },
+  //     specialRequirements: "Vegetarian meal, wheelchair accessible seating"
+  //   },
+  //   {
+  //     id: 2,
+  //     courseTitle: "Safety Compliance & Risk Management",
+  //     date: "2025-01-22",
+  //     time: "02:00 PM",
+  //     duration: 6,
+  //     location: "Safety Training Facility, Abu Dhabi",
+  //     status: "Pending",
+  //     bookingId: "BK-2025-002",
+  //     instructor: {
+  //       name: "Sarah Johnson",
+  //       title: "Safety Director, ALEC Engineering",
+  //       rating: 4.8
+  //     }
+  //   }
+  // ];
 
   // Filter courses based on search and filters
 const filteredCourses = courses?.filter(course => {
