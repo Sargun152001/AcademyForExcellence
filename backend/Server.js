@@ -10,13 +10,21 @@ const app = express();
 app.use(express.json());
 
 // ✅ Enable CORS for your frontend domain
-app.use(
-  cors({
-    origin: "https://academyforexcellence-frontend.onrender.com", 
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    credentials: true,
-  })
-);
+const allowedOrigins = [
+  'https://academyforexcellence-frontend.onrender.com',
+  'http://localhost:4028',
+  'https://academyfo3074back.onrender.com'
+];
+ 
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
+}));
 
 // MSAL config for Business Central
 const msalConfig = {
