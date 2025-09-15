@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Proxy base URL → goes to your Node backend
 const BASE_API_URL = "/api";
-const BACKEND_URL = "https://academyfo3074back.onrender.com";
+const BACKEND_URL = "https://academyforexcellence-backend-ywc2.onrender.com";
 
 // Sleep utility for retry logic
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
