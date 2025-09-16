@@ -93,20 +93,27 @@ const generateScheduleId = () => {
     { value: '15:00', label: '3:00 PM - Late Afternoon Session' }
   ];
 
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
+ const handleInputChange = (field, value) => {
+  // Ensure date fields are always in YYYY-MM-DD string format
+  if (field === 'preferredDate') {
+    // If value is null/undefined, store empty string
+    value = value ? value : '';
+  }
+
+  setFormData(prev => ({
+    ...prev,
+    [field]: value
+  }));
+
+  // Clear error when user types/selects
+  if (errors?.[field]) {
+    setErrors(prev => ({
       ...prev,
-      [field]: value
+      [field]: ''
     }));
-    
-    // Clear error when user starts typing
-    if (errors?.[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }));
-    }
-  };
+  }
+};
+
 
   const handleNotificationChange = (type, checked) => {
     setFormData(prev => ({
@@ -300,17 +307,18 @@ const generateScheduleId = () => {
 />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Input
-                label="Preferred Date"
-                type="date"
-                value={formData?.preferredDate}
-                onChange={(e) => handleInputChange('preferredDate', e?.target?.value)}
-                error={errors?.preferredDate}
-                min={new Date()?.toISOString()?.split('T')?.[0]}
-                required
-                data-error={!!errors?.preferredDate}
-                description="Select your preferred training date"
-              />
+             <Input
+  label="Preferred Date"
+  type="date"
+  value={formData.preferredDate || ''} // ensure it's always a string
+  onChange={(e) => handleInputChange('preferredDate', e.target.value)}
+  error={errors?.preferredDate}
+  min={new Date().toISOString().split('T')[0]} // today
+  required
+  data-error={!!errors?.preferredDate}
+  description="Select your preferred training date"
+/>
+
               <Select
                 label="Preferred Time"
                 description="Select your preferred time slot"

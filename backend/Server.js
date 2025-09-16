@@ -9,7 +9,6 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-// ✅ Enable CORS for your frontend domain
 const allowedOrigins = [
   'https://academyforexcellence-frontend.onrender.com',
   'http://localhost:4028',

@@ -135,12 +135,12 @@ const LiveStatistics = () => {
               month: 'long',
               day: 'numeric',
               timeZone: 'Asia/Dubai'
-            })} • Dubai Time
+            })} • UAE Time
           </div>
         </div>
       </div>
       {/* Organization Statistics */}
-      <div className="bg-card rounded-xl p-6 construction-shadow">
+      {/* <div className="bg-card rounded-xl p-6 construction-shadow">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-heading font-semibold text-authority-charcoal">
             Live Statistics
@@ -170,7 +170,7 @@ const LiveStatistics = () => {
             </div>
           ))}
         </div>
-      </div>
+      </div> */}
       {/* Upcoming Deadlines */}
       <div className="bg-card rounded-xl p-6 construction-shadow">
         <div className="flex items-center justify-between mb-6">

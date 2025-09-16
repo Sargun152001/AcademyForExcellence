@@ -983,53 +983,68 @@ export const cancelBooking = async (bookingId, reason) => {
 /**
  * Get user's bookings
  */
+// Fetch user bookings and merge with course data
 export const getUserBookings = async (filters = {}) => {
   try {
-    let endpoint = '/Bookings';
-    const params = new URLSearchParams();
-    
-    // Filter by current user by default
-    // params.append('$filter', "UserId eq 'current-user'");
-    
-    // Add additional filters if provided
-    if (filters?.status) {
-      params.append('$filter', `Status eq '${filters.status}'`);
-    }
-    if (filters?.startDate) {
-      params.append('$filter', `BookingDate ge ${filters.startDate}`);
-    }
-    
-    endpoint += `?${params.toString()}`;
-    
-    const response = await apiCall('GET', endpoint);
+    // 1️⃣ Build query string
+    const qs = toQueryString(filters);
+    const url = `${BACKEND_URL}/api/Bookings${qs}`;
+    console.log("📡 Full URL being called (bookings):", url);
 
-    // Log the full raw response
-    console.log('Raw response from API:', response);
-    
+    // 2️⃣ Fetch bookings
+    const res = await fetch(url, {
+      headers: { Accept: "application/json" },
+    });
 
-    return response?.value?.map(booking => ({
-      id: booking?.BookingId,
-      scheduleId: booking?.ScheduleId,
-      courseId: booking?.CourseId,
-      courseName: booking?.CourseName,
-      sessionTitle: booking?.SessionTitle,
-      instructorName: booking?.InstructorName,
-      startDateTime: booking?.StartDateTime,
-      endDateTime: booking?.EndDateTime,
-      location: booking?.Location,
-      format: booking?.Format,
-      meetingLink: booking?.MeetingLink,
-      status: booking?.Status?.toLowerCase(),
-      bookingDate: booking?.BookingDate,
-      notes: booking?.Notes,
-      specialRequirements: booking?.SpecialRequirements,
-      cancellationReason: booking?.CancellationReason
-    })) || [];
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Backend error: ${res.status} ${text}`);
+    }
+
+    const data = await res.json();
+    const bookings = data?.value || [];
+
+    // 3️⃣ Fetch courses once
+    const courses = await getCourses();
+
+    // 4️⃣ Map bookings → normalized format
+    return bookings.map((b) => {
+      const course = courses.find((c) => c.id === b.courseId);
+      const bookingDate = b.bookingDate ? new Date(b.bookingDate) : null;
+
+      return {
+        id: b.systemId,
+        bookingId: b.bookingNo,
+        scheduleId: b.scheduleID,
+        courseId: b.courseId,
+        courseName: b.courseTitle || course?.name,
+        date: b.preferredDate,
+        time: b.preferredTime,
+        location: course?.location || "Online / TBD",
+        format: b.attendeeType || course?.format,
+        status: b.status?.toLowerCase(),
+        specialRequirements: b.specialRequirements || "",
+        notes: b.notes,
+        duration: course?.duration || null,
+        instructor: course?.instructor || null,
+        category: course?.category || null,
+        level: course?.level || null,
+        rating: course?.rating || null,
+        totalRatings: course?.totalRatings || null,
+        createdDate: course?.createdDate || null,
+        lastModified: course?.lastModified || null,
+        imageUrl: course?.imageUrl || null,
+        originalPrice: course?.originalPrice || null,
+      };
+    });
   } catch (error) {
-    console.error('Error fetching user bookings:', error);
+    console.error("❌ Error fetching user bookings:", error);
     throw error;
   }
 };
+
+
+
 
 // =============================================================================
 // ENROLLMENT RELATED APIs

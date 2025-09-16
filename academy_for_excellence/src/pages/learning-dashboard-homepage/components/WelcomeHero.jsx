@@ -1,8 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom'; // 👈 added
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
 const WelcomeHero = ({ userRole, userName, userTitle }) => {
+  const navigate = useNavigate(); // 👈 added
+
   const getRoleSpecificContent = () => {
     switch (userRole) {
       case 'manager':
@@ -13,7 +16,9 @@ const WelcomeHero = ({ userRole, userName, userTitle }) => {
           primaryAction: "View Team Progress",
           secondaryAction: "Nominate Team Members",
           icon: "Users",
-          bgGradient: "from-construction-blue to-decision-blue"
+          bgGradient: "from-construction-blue to-decision-blue",
+          primaryLink: "/personal-learning-path-progress", // 👈 added
+          secondaryLink: "/schedule-management-booking"     // 👈 added
         };
       case 'instructor':
         return {
@@ -23,7 +28,9 @@ const WelcomeHero = ({ userRole, userName, userTitle }) => {
           primaryAction: "View Teaching Schedule",
           secondaryAction: "Course Materials",
           icon: "GraduationCap",
-          bgGradient: "from-confidence-teal to-construction-blue"
+          bgGradient: "from-confidence-teal to-construction-blue",
+          primaryLink: "/schedule-management-booking",       // 👈 added
+          secondaryLink: "/course-catalog-discovery"         // 👈 added
         };
       default:
         return {
@@ -33,7 +40,9 @@ const WelcomeHero = ({ userRole, userName, userTitle }) => {
           primaryAction: "Continue Learning",
           secondaryAction: "Explore Courses",
           icon: "Award",
-          bgGradient: "from-primary to-secondary"
+          bgGradient: "from-primary to-secondary",
+          primaryLink: "/personal-learning-path-progress",   // 👈 added
+          secondaryLink: "/course-catalog-discovery"         // 👈 added
         };
     }
   };
@@ -78,12 +87,14 @@ const WelcomeHero = ({ userRole, userName, userTitle }) => {
             <Button 
               variant="secondary"
               className="bg-white text-construction-blue hover:bg-white/90 border-0"
+              onClick={() => navigate(content?.primaryLink)} // 👈 redirect
             >
               {content?.primaryAction}
             </Button>
             <Button 
               variant="outline"
               className="border-white/30 text-white hover:bg-white/10"
+              onClick={() => navigate(content?.secondaryLink)} // 👈 redirect
             >
               {content?.secondaryAction}
             </Button>

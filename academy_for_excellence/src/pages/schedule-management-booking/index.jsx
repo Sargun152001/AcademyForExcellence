@@ -77,8 +77,27 @@ const fetchUserBookings = async () => {
   setBookingsLoading(true);
   setBookingsError(null);
   try {
-    const data = await getUserBookings(); // Pass filters if needed
-    setBookings(data || []); // always ensure an array
+    // Fetch bookings merged with courses
+    const data = await getUserBookings();
+
+    // ✅ No extra remapping needed, just pass fields as-is
+    const normalized = data.map(b => ({
+      bookingId: b.bookingId,
+      courseTitle: b.courseName,
+      date: b.date,
+      time: b.time,
+      location: b.location,
+      status: b.status,
+      duration: b.duration,
+      instructor: b.instructor || { name: "TBD", title: "", rating: 0 },
+      specialRequirements: b.specialRequirements,
+      rating: b.rating,
+      totalRatings: b.totalRatings,
+      imageUrl: b.imageUrl,
+    }));
+
+    console.log("Mapped bookings:", normalized);
+    setBookings(normalized || []);
   } catch (err) {
     console.error('Failed to load bookings:', err);
     setBookingsError('Failed to load bookings. Please try again.');
@@ -86,7 +105,6 @@ const fetchUserBookings = async () => {
     setBookingsLoading(false);
   }
 };
-
 
 
   // Mock data for courses
@@ -636,13 +654,30 @@ console.log("Filtered courses:", filteredCourses);
                         </div>
                       </div>
                       
-                      <CalendarView
-                        selectedDate={selectedDate}
-                        onDateSelect={handleDateSelect}
-                        availableSlots={dynamicSlots?.filter(slot => slot?.courseId === selectedCourse?.id)}
-                        onSlotSelect={handleSlotSelect}
-                        selectedSlot={selectedSlot}
-                      />
+                   <CalendarView
+  selectedDate={selectedDate}
+  onDateSelect={handleDateSelect}
+  availableSlots={bookings
+    ?.filter(b => {
+      if (!selectedDate) return false;
+      const bDate = new Date(b.date);
+      return (
+        bDate.getFullYear() === selectedDate.getFullYear() &&
+        bDate.getMonth() === selectedDate.getMonth() &&
+        bDate.getDate() === selectedDate.getDate()
+      );
+    })
+    ?.map(b => ({
+      id: b.bookingId,
+      courseId: b.courseId, // make sure your booking object has courseId
+      time: b.time,
+      availableSpots: 1, // optional, just to fill the shape
+    }))
+  }
+  onSlotSelect={handleSlotSelect}
+  selectedSlot={selectedSlot}
+/>
+
                     </div>
                   )}
 
@@ -675,77 +710,51 @@ console.log("Filtered courses:", filteredCourses);
                 </div>
                 <div>
                   {selectedDate ? (
-                    <div className="bg-card rounded-xl construction-shadow-premium p-6">
-                      <h3 className="text-lg font-heading font-semibold text-authority-charcoal mb-4">
-                        Available Courses
-                      </h3>
-                      <div className="space-y-3">
-                        {dynamicSlots?.filter(slot => {
-                            const dateStr = `${selectedDate?.getFullYear()}-${String(selectedDate?.getMonth() + 1)?.padStart(2, '0')}-${String(selectedDate?.getDate())?.padStart(2, '0')}`;
-                            return slot?.date === dateStr;
-                          })?.map(slot => {
-                            const course = courses?.find(c => c?.id === slot?.courseId);
-                            return (
-                              <div 
-                                key={slot?.id} 
-                                className={`p-4 border rounded-lg cursor-pointer construction-transition ${
-                                  selectedSlot?.id === slot?.id 
-                                    ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50 hover:bg-muted'
-                                }`}
-                                onClick={() => handleSlotSelect(slot)}
-                              >
-                                <h4 className="font-semibold text-authority-charcoal text-sm mb-2 line-clamp-2">
-                                  {course?.title}
-                                </h4>
-                                <div className="flex items-center justify-between text-xs">
-                                  <div className="flex items-center space-x-2">
-                                    <Icon name="Clock" size={12} className="text-professional-gray" />
-                                    <span className="text-professional-gray">{slot?.time}</span>
-                                  </div>
-                                  <div className="flex items-center space-x-1">
-                                    <Icon name="Users" size={12} className="text-success" />
-                                    <span className="text-success font-medium">{slot?.availableSpots}</span>
-                                  </div>
-                                </div>
-                                {course?.instructor && (
-                                  <div className="mt-2 text-xs text-professional-gray">
-                                    Instructor: {course?.instructor?.name}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                      </div>
-                      
-                      {selectedSlot && (
-                        <div className="mt-6 pt-4 border-t border-border">
-                          <Button
-                            onClick={() => {
-                              const course = courses?.find(c => c?.id === selectedSlot?.courseId);
-                              setSelectedCourse(course);
-                              setActiveTab('browse');
-                              setShowBookingForm(true);
-                            }}
-                            className="w-full"
-                            iconName="ArrowRight"
-                            iconPosition="right"
-                          >
-                            Book This Session
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="bg-card rounded-xl construction-shadow-premium p-6 text-center">
-                      <Icon name="Calendar" size={48} className="text-professional-gray mx-auto mb-4 opacity-50" />
-                      <h3 className="text-lg font-heading font-semibold text-authority-charcoal mb-2">
-                        Select a Date
-                      </h3>
-                      <p className="text-professional-gray">
-                        Click on a date in the calendar to view available courses and time slots.
-                      </p>
-                    </div>
-                  )}
+  <div className="bg-card rounded-xl construction-shadow-premium p-6">
+    <h3 className="text-lg font-heading font-semibold text-authority-charcoal mb-4">
+      Bookings on {selectedDate.toLocaleDateString()}
+    </h3>
+    <div className="space-y-3">
+      {bookings?.filter(b => {
+        const bookingDateStr = new Date(b.date).toDateString();
+        return bookingDateStr === selectedDate.toDateString();
+      })?.map(booking => (
+        <div 
+          key={booking.bookingId} 
+          className="p-4 border rounded-lg bg-muted text-sm"
+        >
+          <h4 className="font-semibold text-authority-charcoal mb-1">
+            {booking.courseTitle}
+          </h4>
+          <p className="text-professional-gray mb-1">
+            Time: {booking.time} | Duration: {booking.duration} hrs
+          </p>
+          <p className="text-professional-gray mb-1">
+            Location: {booking.location || 'TBD'}
+          </p>
+          <p className={`font-medium ${booking.status === 'Confirmed' ? 'text-success' : 'text-yellow-600'}`}>
+            Status: {booking.status}
+          </p>
+        </div>
+      )) || (
+        <p className="text-professional-gray text-sm">
+          No bookings on this date.
+        </p>
+      )}
+    </div>
+  </div>
+) : (
+  <div className="bg-card rounded-xl construction-shadow-premium p-6 text-center">
+    <Icon name="Calendar" size={48} className="text-professional-gray mx-auto mb-4 opacity-50" />
+    <h3 className="text-lg font-heading font-semibold text-authority-charcoal mb-2">
+      Select a Date
+    </h3>
+    <p className="text-professional-gray">
+      Click on a date in the calendar to view bookings for that day.
+    </p>
+  </div>
+)}
+
                 </div>
               </div>
             )}

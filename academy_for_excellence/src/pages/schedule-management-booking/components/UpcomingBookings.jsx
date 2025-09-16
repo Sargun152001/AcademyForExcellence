@@ -137,7 +137,7 @@ const UpcomingBookings = ({ bookings, onCancelBooking, onReschedule }) => {
               </div>
               <div className="flex items-center space-x-1">
                 <Icon name="Star" size={12} className="text-warning fill-current" />
-                <span className="text-xs text-professional-gray">{booking?.instructor?.rating}</span>
+                <span className="text-xs text-professional-gray">{booking?.rating}</span>
               </div>
             </div>
 
