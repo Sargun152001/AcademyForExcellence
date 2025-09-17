@@ -23,27 +23,31 @@ const AssessmentFeedbackCenter = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [assessmentStarted, setAssessmentStarted] = useState(null);
 
+  const [isOnlineMode, setIsOnlineMode] = useState(navigator?.onLine || false);
+  const [offlineData, setOfflineData] = useState([]);
+  const [showSubmissionForm, setShowSubmissionForm] = useState(false);
+
   // Business Central integration hooks
   const { isConnected, connectionStatus } = useBusinessCentral();
-  const { 
-    assessments, 
-    stats, 
-    loading: assessmentsLoading, 
-    error: assessmentsError, 
-    submitAssessmentRequest, 
-    startAssessment 
+  const {
+    assessments,
+    stats,
+    loading: assessmentsLoading,
+    error: assessmentsError,
+    submitAssessmentRequest,
+    startAssessment
   } = useAssessments();
-  const { 
-    feedbackCourses, 
-    loading: feedbackLoading, 
-    error: feedbackError, 
-    submitFeedback 
+  const {
+    feedbackCourses,
+    loading: feedbackLoading,
+    error: feedbackError,
+    submitFeedback
   } = useFeedback();
-  const { 
-    peerEvaluations, 
-    loading: peerLoading, 
-    error: peerError, 
-    submitEvaluation 
+  const {
+    peerEvaluations,
+    loading: peerLoading,
+    error: peerError,
+    submitEvaluation
   } = usePeerEvaluations();
 
   const tabs = [
@@ -72,7 +76,7 @@ const AssessmentFeedbackCenter = () => {
     setIsExporting(true);
     try {
       const completedAssessments = assessments?.filter(assessment => assessment?.status === 'completed') || [];
-      
+
       const reportData = {
         generatedAt: new Date()?.toISOString(),
         connectionStatus: isConnected ? 'connected' : 'disconnected',
@@ -107,7 +111,7 @@ const AssessmentFeedbackCenter = () => {
       const reportContent = JSON.stringify(reportData, null, 2);
       const blob = new Blob([reportContent], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
-      
+
       const link = document.createElement('a');
       link.href = url;
       link.download = `assessment-report-bc-${new Date()?.toISOString()?.split('T')?.[0]}.json`;
@@ -115,7 +119,7 @@ const AssessmentFeedbackCenter = () => {
       link?.click();
       document.body?.removeChild(link);
       URL.revokeObjectURL(url);
-      
+
       alert('Assessment report exported successfully!');
     } catch (error) {
       console.error('Export failed:', error);
@@ -144,16 +148,16 @@ const AssessmentFeedbackCenter = () => {
   // Enhanced Start Assessment functionality
   const handleStartAssessment = async (assessment) => {
     if (!assessment) return;
-    
+
     if (!isConnected) {
       alert('Cannot start assessment: Not connected to Business Central. Please check your connection and try again.');
       return;
     }
-    
+
     setAssessmentStarted(assessment?.id);
-    
+
     const confirmed = window.confirm(`Are you sure you want to start the "${assessment?.courseName}" assessment?\n\nDuration: ${assessment?.duration} minutes\nType: ${assessment?.type}\n\nThis will be recorded in Business Central.`);
-    
+
     if (confirmed) {
       try {
         await startAssessment(assessment?.id);
@@ -173,18 +177,21 @@ const AssessmentFeedbackCenter = () => {
       alert('Results are only available for completed assessments.');
       return;
     }
-    
+
     setSelectedAssessment(assessment);
     setShowResultsModal(true);
   };
 
   const handleSubmitFeedback = async (feedbackData) => {
     try {
-      if (!isConnected) {
-        throw new Error('Not connected to Business Central');
-      }
+      // if (!isConnected) {
+      //   throw new Error('Not connected to Business Central');
+      // }
+
+      console.log("Data to be send: ", selectedCourse?.bookingId, selectedCourse?.courseId, feedbackData);
+      await submitFeedback(selectedCourse?.bookingId, selectedCourse?.courseId, feedbackData);
       
-      await submitFeedback(selectedCourse?.id, feedbackData);
+      // await submitFeedback(selectedCourse?.id, feedbackData);
       alert('Feedback submitted successfully to Business Central!');
       setShowFeedbackForm(false);
       setSelectedCourse(null);
@@ -194,12 +201,17 @@ const AssessmentFeedbackCenter = () => {
     }
   };
 
+  const handleCourseSelection = (course) => {
+    setSelectedCourse(course);
+    setShowFeedbackForm(true);
+  };
+
   const handleSubmitPeerEvaluation = async (evaluationData) => {
     try {
       if (!isConnected) {
         throw new Error('Not connected to Business Central');
       }
-      
+
       await submitEvaluation(evaluationData?.evaluationId, evaluationData);
       alert('Peer evaluation submitted successfully to Business Central!');
     } catch (error) {
@@ -214,7 +226,16 @@ const AssessmentFeedbackCenter = () => {
     return statusMatch && typeMatch;
   }) || [];
 
-  const pendingFeedbackCourses = feedbackCourses?.filter(course => course?.status === 'feedback_pending') || [];
+  console.log('Scheduled Bookings: ', feedbackCourses)
+
+  const pendingFeedbackCourses = feedbackCourses?.filter(course => {
+    const courseDateTime = new Date(`${course?.date}T${course?.time}`);
+    const currentDateTime = new Date();
+
+    return courseDateTime.getTime() < currentDateTime.getTime();
+  }) || [];
+  console.log('Scheduled Bookings afterFilter: ', pendingFeedbackCourses)
+
 
   // Loading states
   const isLoading = assessmentsLoading || feedbackLoading || peerLoading;
@@ -233,8 +254,8 @@ const AssessmentFeedbackCenter = () => {
                   <h1 className="text-3xl font-bold text-authority-charcoal">
                     Assessment & Feedback Center
                   </h1>
-                  <ConnectionStatus 
-                    isConnected={isConnected} 
+                  <ConnectionStatus
+                    isConnected={isConnected}
                     connectionStatus={connectionStatus}
                   />
                 </div>
@@ -248,11 +269,11 @@ const AssessmentFeedbackCenter = () => {
                   </div>
                 )}
               </div>
-              
+
               <div className="flex items-center space-x-3">
-                <Button 
-                  variant="outline" 
-                  iconName="Download" 
+                <Button
+                  variant="outline"
+                  iconName="Download"
                   iconPosition="left"
                   onClick={handleExportReports}
                   loading={isExporting}
@@ -260,9 +281,9 @@ const AssessmentFeedbackCenter = () => {
                 >
                   {isExporting ? 'Exporting...' : 'Export Reports'}
                 </Button>
-                <Button 
-                  variant="default" 
-                  iconName="Plus" 
+                <Button
+                  variant="default"
+                  iconName="Plus"
                   iconPosition="left"
                   onClick={handleRequestAssessment}
                   disabled={!isConnected}
@@ -312,10 +333,9 @@ const AssessmentFeedbackCenter = () => {
                   <button
                     key={tab?.id}
                     onClick={() => setActiveTab(tab?.id)}
-                    className={`flex items-center space-x-2 py-4 border-b-2 font-medium text-sm construction-transition ${
-                      activeTab === tab?.id
-                        ? 'border-primary text-primary' :'border-transparent text-professional-gray hover:text-authority-charcoal hover:border-border'
-                    }`}
+                    className={`flex items-center space-x-2 py-4 border-b-2 font-medium text-sm construction-transition ${activeTab === tab?.id
+                      ? 'border-primary text-primary' : 'border-transparent text-professional-gray hover:text-authority-charcoal hover:border-border'
+                      }`}
                   >
                     <Icon name={tab?.icon} size={20} />
                     <span>{tab?.label}</span>
@@ -347,7 +367,7 @@ const AssessmentFeedbackCenter = () => {
                         className="w-48"
                       />
                     </div>
-                    
+
                     <div className="text-sm text-professional-gray">
                       Showing {filteredAssessments?.length} of {assessments?.length || 0} assessments
                       {isConnected && <span className="text-green-600"> (Live data)</span>}
@@ -372,8 +392,8 @@ const AssessmentFeedbackCenter = () => {
                       <Icon name="ClipboardList" size={48} className="mx-auto mb-4 text-border" />
                       <h3 className="text-lg font-medium mb-2">No Assessments Found</h3>
                       <p className="text-sm">
-                        {assessmentsLoading 
-                          ? 'Loading assessments from Business Central...' :'No assessments match your current filters or none are available.'}
+                        {assessmentsLoading
+                          ? 'Loading assessments from Business Central...' : 'No assessments match your current filters or none are available.'}
                       </p>
                     </div>
                   )}
@@ -390,7 +410,7 @@ const AssessmentFeedbackCenter = () => {
                           Pending Course Feedback
                         </h3>
                         <p className="text-professional-gray">
-                          Provide feedback for completed courses to help improve training quality and cultural relevance. 
+                          Provide feedback for completed courses to help improve training quality and cultural relevance.
                           {isConnected && <span className="text-green-600"> Data synced with Business Central.</span>}
                         </p>
                       </div>
@@ -401,32 +421,29 @@ const AssessmentFeedbackCenter = () => {
                             <div key={course?.id} className="bg-white rounded-lg border border-border p-6 construction-shadow hover:construction-shadow-lg construction-transition">
                               <div className="mb-4">
                                 <h4 className="font-semibold text-authority-charcoal mb-2">
-                                  {course?.name}
+                                  {course?.courseName}
                                 </h4>
                                 <div className="text-sm text-professional-gray space-y-1">
                                   <div className="flex items-center space-x-2">
                                     <Icon name="Calendar" size={16} />
-                                    <span>Completed: {course?.completionDate}</span>
+                                    <span>Completed: {course?.date}</span>
                                   </div>
                                   <div className="flex items-center space-x-2">
                                     <Icon name="User" size={16} />
-                                    <span>Instructor: {course?.instructor}</span>
+                                    <span>Instructor: {course?.instructor?.name}</span>
                                   </div>
                                 </div>
                               </div>
-                              
+
                               <Button
                                 variant="default"
                                 fullWidth
-                                onClick={() => {
-                                  setSelectedCourse(course);
-                                  setShowFeedbackForm(true);
-                                }}
+                                onClick={() => handleCourseSelection(course)}
                                 iconName="MessageSquare"
                                 iconPosition="left"
-                                disabled={!isConnected}
+                                disabled={!isOnlineMode}
                               >
-                                Provide Feedback
+                                {!isOnlineMode && course?.type !== 'self_assessment' ? 'Offline Mode' : 'Provide Feedback'}
                               </Button>
                             </div>
                           ))}
@@ -436,8 +453,8 @@ const AssessmentFeedbackCenter = () => {
                           <Icon name="MessageSquare" size={48} className="mx-auto mb-4 text-border" />
                           <h3 className="text-lg font-medium mb-2">No Pending Feedback</h3>
                           <p className="text-sm">
-                            {feedbackLoading 
-                              ? 'Loading feedback courses from Business Central...' :'All course feedback has been completed or none are available.'}
+                            {feedbackLoading
+                              ? 'Loading feedback courses from Business Central...' : 'All course feedback has been completed or none are available.'}
                           </p>
                         </div>
                       )}
@@ -485,8 +502,8 @@ const AssessmentFeedbackCenter = () => {
                       <Icon name="Users" size={48} className="mx-auto mb-4 text-border" />
                       <h3 className="text-lg font-medium mb-2">No Peer Evaluations</h3>
                       <p className="text-sm">
-                        {peerLoading 
-                          ? 'Loading peer evaluations from Business Central...' :'No peer evaluations are currently pending or available.'}
+                        {peerLoading
+                          ? 'Loading peer evaluations from Business Central...' : 'No peer evaluations are currently pending or available.'}
                       </p>
                     </div>
                   )}
@@ -521,7 +538,7 @@ const AssessmentFeedbackCenter = () => {
                 </div>
               </div>
             )}
-            
+
             <form
               onSubmit={(e) => {
                 e?.preventDefault();
@@ -549,7 +566,7 @@ const AssessmentFeedbackCenter = () => {
                   placeholder="Enter course or topic name"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-authority-charcoal mb-2">
                   Assessment Type *
@@ -567,7 +584,7 @@ const AssessmentFeedbackCenter = () => {
                   <option value="Practical Assessment">Practical Assessment</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-authority-charcoal mb-2">
                   Preferred Date
@@ -579,7 +596,7 @@ const AssessmentFeedbackCenter = () => {
                   className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-authority-charcoal mb-2">
                   Additional Notes
@@ -592,12 +609,12 @@ const AssessmentFeedbackCenter = () => {
                   placeholder="Any specific requirements or notes"
                 />
               </div>
-              
+
               <div className="flex items-center space-x-3 pt-4">
-                <Button 
-                  type="submit" 
-                  variant="default" 
-                  fullWidth 
+                <Button
+                  type="submit"
+                  variant="default"
+                  fullWidth
                   disabled={!isConnected}
                 >
                   Submit to Business Central

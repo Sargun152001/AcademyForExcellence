@@ -218,7 +218,8 @@ export const useFeedback = () => {
       setError(null);
       
       console.log('Fetching feedback courses...');
-      const coursesData = await businessCentralApi?.getFeedbackCourses();
+      const coursesData = await businessCentralApi?.getUserBookings();
+console.log('CourseData from fetchFeedbackCourses: ', coursesData);
       setFeedbackCourses(coursesData || []);
       setLastFetchTime(new Date());
       console.log('Successfully fetched feedback courses');
@@ -237,10 +238,8 @@ export const useFeedback = () => {
 
   const submitFeedback = useCallback(async (courseId, feedbackData) => {
     try {
-      const result = await businessCentralApi?.submitCourseFeedback(courseId, feedbackData);
-      // Refresh courses after successful submission
-      await fetchFeedbackCourses(false);
-      return result;
+      console.log('Submit Feedback function: ', bookingId, courseId, feedbackData)
+      return;
     } catch (err) {
       console.error('Error submitting feedback:', err);
       throw new Error(err?.message || 'Failed to submit feedback');
