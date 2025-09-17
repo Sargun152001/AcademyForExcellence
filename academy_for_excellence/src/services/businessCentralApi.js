@@ -948,14 +948,26 @@ export const createBooking = async (bookingData) => {
 
     console.log("📡 Booking Payload Sent (camelCase):", payload);
 
-    // Send to BC API
-    const response = await apiCall("POST", "/Bookings", payload);
-    return response;
+const response = await fetch(`${BACKEND_URL}/api/Bookings`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("❌ Backend response:", text);
+      throw new Error(`Failed to create booking: ${response.status} ${text}`);
+    }
+
+    const result = await response.json();
+    console.log("✅ Booking created:", result);
+    return result;
   } catch (error) {
     console.error("❌ Error creating booking:", error);
-     if (error.response) {
-    console.error("📡 BC Response Data:", error.response.data);
-  }
     throw error;
   }
 };

@@ -36,6 +36,17 @@ const generateScheduleId = () => {
 };
 
 
+useEffect(() => {
+  if (selectedCourse) {
+    setFormData(prev => ({
+      ...prev,
+      courseId: selectedCourse.id,
+      courseTitle: selectedCourse.title || selectedCourse.name, // depending on your API field
+    }));
+  }
+}, [selectedCourse]);
+
+
 
   // Fetch courses dynamically for direct booking
   useEffect(() => {
@@ -292,19 +303,20 @@ const generateScheduleId = () => {
   label="Select Course"
   description="Choose the course you want to schedule"
   options={courseOptions} // [{ value: course.id, label: course.name }]
-  value={formData?.courseId}
+  value={formData?.courseId} // ✅ will now show the pre-selected one
   onChange={(value) => {
     const selected = courseOptions.find(c => c.value === value);
     setFormData(prev => ({
       ...prev,
-      courseId: value,              // ✅ store courseId
-      courseTitle: selected?.label, // ✅ also keep courseTitle for display
+      courseId: value,
+      courseTitle: selected?.label,
     }));
   }}
   error={errors?.courseId}
   required
   data-error={!!errors?.courseId}
 />
+
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
              <Input

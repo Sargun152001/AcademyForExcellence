@@ -3,7 +3,7 @@ import Icon from '../../../components/AppIcon';
 import Image from '../../../components/AppImage';
 import Button from '../../../components/ui/Button';
 
-const CourseCard = ({ course, onSelect, isSelected }) => {
+const CourseCard = ({ course, onScheduleCourse ,isSelected}) => {
   const getDifficultyColor = (level) => {
     switch (level?.toLowerCase()) {
       case 'beginner':
@@ -130,16 +130,16 @@ const CourseCard = ({ course, onSelect, isSelected }) => {
           </div>
         )}
 
-        {/* Action Button */}
-        <Button
-          variant={isSelected ? "default" : "outline"}
-          fullWidth
-          onClick={() => onSelect(course)}
-          iconName={isSelected ? "Check" : "Calendar"}
-          iconPosition="left"
-        >
-          {isSelected ? 'Selected' : 'Select Course'}
-        </Button>
+      {/* Action Button */}
+<Button
+  fullWidth
+  onClick={onScheduleCourse}  
+  iconName="Calendar"
+  iconPosition="left"
+>
+  Schedule Course
+</Button>
+
       </div>
     </div>
   );

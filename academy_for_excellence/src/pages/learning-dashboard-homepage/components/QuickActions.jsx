@@ -19,7 +19,7 @@ const QuickActions = ({ userRole }) => {
         description: "Advanced Project Planning - Today 2:00 PM",
         icon: "Clock",
         color: "bg-warning",
-        link: "/schedule-management-booking",
+        link: "/schedule-management-booking?tab=mybookings",
         urgent: true
       },
       {

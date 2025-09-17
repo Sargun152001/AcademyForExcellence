@@ -409,7 +409,8 @@ console.log("Filtered courses:", filteredCourses);
     // In a real app, you would open a reschedule modal
   };
 
-  const handleDirectScheduleCourse = () => {
+  const handleDirectScheduleCourse = (course) => {
+    setSelectedCourse(course); 
     setShowDirectBookingForm(true);
     setActiveTab('browse'); // Ensure we're on the browse tab to see the form
   };
@@ -629,13 +630,13 @@ console.log("Filtered courses:", filteredCourses);
                       <CourseCard
                         key={course?.id}
                         course={course}
-                        onSelect={handleCourseSelect}
-                        isSelected={selectedCourse?.id === course?.id}
+                        isSelected={selectedCourse?.id === course.id}
+                        onScheduleCourse={() => handleDirectScheduleCourse(course)}
                       />
                     ))}
                   </div>
 
-                          {/* Selected Course Scheduling */}
+                          {/* Selected Course Scheduling
                   {selectedCourse && (
                     <div className="mt-8">
                       <div className="bg-accent/20 border border-accent rounded-lg p-4 mb-6">
@@ -679,7 +680,7 @@ console.log("Filtered courses:", filteredCourses);
 />
 
                     </div>
-                  )}
+                  )} */}
 
                   {/* Booking Form */}
                   {showBookingForm && (
