@@ -28,13 +28,15 @@ const LoginPage = () => {
   const [configValidation, setConfigValidation] = useState(null);
   const [debugInfo, setDebugInfo] = useState('');
 
-  // Debug function to test button clicks
+  const BACKEND_URL = 'https://academyforexcellence-backend-ywc2.onrender.com';
+
+  // Debug function
   const debugButtonClick = (buttonName) => {
     console.log(`[DEBUG] Button clicked: ${buttonName}`);
     setDebugInfo(`Button clicked: ${buttonName} at ${new Date().toLocaleTimeString()}`);
   };
 
-  // Validate Azure configuration on mount
+  // Validate Azure configuration
   useEffect(() => {
     try {
       const validation = validateAzureConfig();
@@ -66,113 +68,145 @@ const LoginPage = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, [checkMobile]);
 
-  // Redirect if already authenticated
+  // Helper: fetch the resource data from BC given an email
+  const getUserResourceByEmail = async (email) => {
+    try {
+      console.log('[DEBUG] Calling Resources API for email:', email);
+
+      // ✅ Use correct field name from OData (camelCase eMail)
+      const url = `${BACKEND_URL}/api/Resources?$filter=eMail eq '${email}'`;
+      console.log('[DEBUG] Resources URL:', url);
+
+      const res = await fetch(url, {
+        headers: { Accept: 'application/json' },
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Resources API error: ${res.status} - ${text}`);
+      }
+
+      const data = await res.json();
+      console.log('[DEBUG] Resources API response data:', data);
+
+      const resource = data?.value?.[0];
+      if (!resource) {
+        console.warn('[DEBUG] No resource found for this email:', email);
+        return null;
+      }
+
+      // ✅ Use correct property names exactly as in Postman response
+      const mappedResource = {
+        id: resource.no,
+        name: resource.name,
+        title: resource.designation,
+        email: resource.eMail,
+        role: resource.designation
+      };
+
+      console.log('[DEBUG] Mapped BC Resource:', mappedResource);
+
+
+      localStorage.setItem('userResource', JSON.stringify(mappedResource));
+      // localStorage.setItem('isAuthenticated', 'true');
+      localStorage.setItem('userData', JSON.stringify(mappedResource));
+      // localStorage.setItem('authType', 'demo');
+
+      return mappedResource;
+    } catch (err) {
+      console.error('[DEBUG] Resource Fetch Error:', err);
+      return null;
+    }
+  };
+
+
+  // 🚀 After authentication → fetch BC resource → then navigate
   useEffect(() => {
-    console.log('[DEBUG] Auth state:', { isAuthenticated, user, authLoading });
-    if (isAuthenticated && user && !authLoading) {
-      console.log('[DEBUG] User already authenticated, redirecting to dashboard...');      
-      navigate('/learning-dashboard-homepage', { replace: true });
-    } else if (getAccount) {
-      // Check for an active MSAL account
-      const account = getAccount();
-      console.log('[DEBUG] MSAL account check:', account);
-      if (account) {
-        console.log('[DEBUG] Found active account, redirecting to dashboard...');            
+    const processLogin = async () => {
+      console.log('[DEBUG] Auth state:', { isAuthenticated, user, authLoading });
+
+      if ((isAuthenticated && user && !authLoading) || getAccount?.()) {
+        const email = user?.username || user?.email || getAccount()?.username;
+        if (!email) {
+          console.warn('[DEBUG] No email found, navigating directly.');
+          navigate('/learning-dashboard-homepage', { replace: true });
+          return;
+        }
+
+        console.log('[DEBUG] Fetching BC resource for:', email);
+        const resource = await getUserResourceByEmail(email);
+
+        if (!resource) {
+          console.warn('[DEBUG] No BC resource found, still navigating.');
+        }
+
         navigate('/learning-dashboard-homepage', { replace: true });
       }
-    }
+    };
+
+    processLogin();
   }, [isAuthenticated, user, authLoading, navigate, getAccount]);
 
   // Handle Azure AD login
-  const handleAzureLogin = async (useRedirect = false,role) => {
+  const handleAzureLogin = async (useRedirect = false, role) => {
     debugButtonClick(`Azure Login ${useRedirect ? 'Redirect' : 'Popup'}`);
-    
     try {
       setIsLoading(true);
       setError(null);
-      console.log('[DEBUG] Starting Azure login...', { useRedirect, isMobile });          
-      if (!loginPopup && !loginRedirect) {
-        throw new Error('No login functions available from auth context. Please check AzureAuthProvider setup.');
-      }
 
-      console.log('[DEBUG] Auth functions available:', {
-        loginPopup: !!loginPopup,
-        loginRedirect: !!loginRedirect,
-      });
+      if (!loginPopup && !loginRedirect) {
+        throw new Error('No login functions available from auth context.');
+      }
 
       let loginResult;
       if (useRedirect && loginRedirect) {
-        console.log('[DEBUG] Calling loginRedirect...');
         await loginRedirect();
-        // Note: For redirect, the page will reload, and useEffect will handle navigation
-        return;
+        return; // redirect reloads the page
       } else if (loginPopup) {
-        console.log('[DEBUG] Calling loginPopup...');
         loginResult = await loginPopup();
         console.log('[DEBUG] Login popup result:', loginResult);
-      } else {
-        throw new Error('Required login function not available');
-      }
-      //DDY>>
-      const demoUsers = {
-        manager: {
-          id: 'demo-mgr-1',
-          name: 'Dheeraj Dubey',
-          email: 'admin@trojanpi.onmicrosoft.com',
-          title: 'Construction Director',
-          role: 'manager',
-        }
-      };
-
-      const userData = demoUsers[role];
-      if (!userData) {
-        throw new Error(`Invalid role: ${role}`);
       }
 
-      console.log('[DEBUG] Setting demo user data:', userData);
-      
+      // BC lookup before navigating
+      // await getUserResourceByEmail(userData.email);
+
+      // Demo user injection (for now)
+      // const demoUsers = {
+      //   manager: {
+      //     id: 'demo-mgr-1',
+      //     name: 'Dheeraj Dubey',
+      //     email: 'admin@trojanpi.onmicrosoft.com',
+      //     title: 'Construction Director',
+      //     role: 'manager',
+      //   },
+      // };
+      // const userData = demoUsers[role];
+      // if (!userData) throw new Error(`Invalid role: ${role}`);
+
       localStorage.setItem('isAuthenticated', 'true');
-      localStorage.setItem('userData', JSON.stringify(userData));
+      // localStorage.setItem('userData', JSON.stringify(userData));
       localStorage.setItem('authType', 'demo');
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));      
-      //DDY<<
-      // Check authentication state after login
-      console.log('[DEBUG] Post-login auth state:', { isAuthenticated, user });
-      if (isAuthenticated && user) {
-        console.log('[DEBUG] Azure login successful, navigating to dashboard...');
-        navigate('/learning-dashboard-homepage', { replace: true });
-      } else if (loginResult && loginResult.account) {
-        console.log('[DEBUG] Login result received, verifying account...');
-        const account = getAccount ? getAccount() : null;
-        console.log('[DEBUG] MSAL account after login:', account);
-        if (account) {
-          console.log('[DEBUG] Account verified, navigating to dashboard...');
-          navigate('/learning-dashboard-homepage', { replace: true });
-        } else {
-          throw new Error('No active account found after login. Please try again.');
-        }
-      } else {
-        console.warn('[DEBUG] No user data or account in login result:', loginResult);
-        throw new Error('Authentication failed: Unable to retrieve user data. Please try again.');
-      }
 
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // BC lookup before navigating
+      await getUserResourceByEmail(userData.email);
+
+      navigate('/learning-dashboard-homepage', { replace: true });
     } catch (err) {
       console.error('[DEBUG] Azure login error:', err);
-      setError(err.message || 'Login failed. Please try again or contact your administrator.');
+      setError(err.message || 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  //Handle demo login
+  // Handle demo login
   const handleDemoLogin = async (role) => {
     debugButtonClick(`Demo Login: ${role}`);
-    
     try {
       setIsLoading(true);
       setError(null);
-      console.log('[DEBUG] Demo login for role:', role);
 
       const demoUsers = {
         employee: {
@@ -199,21 +233,18 @@ const LoginPage = () => {
       };
 
       const userData = demoUsers[role];
-      if (!userData) {
-        throw new Error(`Invalid role: ${role}`);
-      }
+      if (!userData) throw new Error(`Invalid role: ${role}`);
 
-      console.log('[DEBUG] Setting demo user data:', userData);
-      
       localStorage.setItem('isAuthenticated', 'true');
       localStorage.setItem('userData', JSON.stringify(userData));
       localStorage.setItem('authType', 'demo');
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      console.log('[DEBUG] Navigating to dashboard...');
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // BC lookup before navigating
+      await getUserResourceByEmail(userData.email);
+
       navigate('/learning-dashboard-homepage', { replace: true });
-      
     } catch (err) {
       console.error('[DEBUG] Demo login error:', err);
       setError(err.message || 'Demo login failed');
@@ -230,7 +261,6 @@ const LoginPage = () => {
     <>
       <Helmet>
         <title>Sign In - Academy for Excellence</title>
-        <meta name="description" content="Sign in to access your personalized learning dashboard for construction project management excellence." />
       </Helmet>
       <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
@@ -279,33 +309,32 @@ const LoginPage = () => {
             {/* Azure AD Login */}
             <div className="space-y-4 mb-6">
               {['manager'].map((role) => (
-              <button
-                key={role}
-                onClick={() => handleAzureLogin(false,role)}
-                disabled={displayLoading || !isAzureConfigured}
-                className={`
-                  w-full h-12 px-4 py-2 rounded-lg font-medium transition-all duration-200 
-                  flex items-center justify-center space-x-2 relative
-                  ${displayLoading || !isAzureConfigured
-                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
-                    : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg cursor-pointer'
-                  }
-                `}
-                style={{ zIndex: 999 }}
-              >
-                {displayLoading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span>Loading...</span>
-                  </>
-                ) : (
-                  <>
-                    <Icon name="Shield" size={16} />
-                    <span>Sign in with Microsoft</span>
-                  </>
-                )}
-                {/* Continue as {role.charAt(0).toUpperCase() + role.slice(1)} */}
-              </button>
+                <button
+                  key={role}
+                  onClick={() => handleAzureLogin(false, role)}
+                  disabled={displayLoading || !isAzureConfigured}
+                  className={`
+                    w-full h-12 px-4 py-2 rounded-lg font-medium transition-all duration-200
+                    flex items-center justify-center space-x-2 relative
+                    ${displayLoading || !isAzureConfigured
+                      ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg cursor-pointer'
+                    }
+                  `}
+                  style={{ zIndex: 999 }}
+                >
+                  {displayLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <span>Loading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="Shield" size={16} />
+                      <span>Sign in with Microsoft</span>
+                    </>
+                  )}
+                </button>
               ))}
               {/* Mobile redirect option */}
               {isMobile && (
@@ -321,11 +350,11 @@ const LoginPage = () => {
             </div>
 
             {/* Demo Login Options */}
-            <div className="pt-6 border-t border-gray-200">
-              <p className="text-center text-sm text-gray-500 mb-4">
+            <div className="pt-6 border-t border-gray-200" style={{ marginTop: '40px' }}>
+              {/* <p className="text-center text-sm text-gray-500 mb-4">
                 Demo Access (Development Only)
-              </p>
-              <div className="space-y-3">
+              </p> */}
+              {/* <div className="space-y-3">
                 {['employee', 'manager', 'instructor'].map((role) => (
                   <button
                     key={role}
@@ -334,25 +363,23 @@ const LoginPage = () => {
                     className="w-full h-10 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-medium transition-all duration-200 flex items-center justify-center cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ zIndex: 998 }}
                   >
-                    <Icon 
-                      name={role === 'employee' ? 'User' : role === 'manager' ? 'Users' : 'GraduationCap'} 
-                      size={16} 
-                      className="mr-2" 
+                    <Icon
+                      name={role === 'employee' ? 'User' : role === 'manager' ? 'Users' : 'GraduationCap'}
+                      size={16}
+                      className="mr-2"
                     />
                     Continue as {role.charAt(0).toUpperCase() + role.slice(1)}
                   </button>
                 ))}
-              </div>
+              </div> */}
             </div>
 
             {/* Configuration Instructions */}
             <div className="mt-6 text-center">
               <p className="text-xs text-gray-500">
-                {isAzureConfigured ? (
-                  'Azure AD properly configured for Microsoft authentication.'
-                ) : (
-                  'To enable Microsoft authentication, configure VITE_AZURE_CLIENT_ID and VITE_AZURE_TENANT_ID in your .env file.'
-                )}
+                {isAzureConfigured
+                  ? 'Azure AD properly configured for Microsoft authentication.'
+                  : 'To enable Microsoft authentication, configure VITE_AZURE_CLIENT_ID and VITE_AZURE_TENANT_ID in your .env file.'}
                 <br />
                 Contact your system administrator for access credentials.
               </p>

@@ -1,43 +1,43 @@
+// LogoutButton.jsx
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useAzureAuthContext } from '../AzureAuthProvider';
 import Button from './Button';
 import Icon from '../AppIcon';
-import { useAzureAuthContext } from '../AzureAuthProvider';
 
 const LogoutButton = ({ variant = "outline", className = "", children, ...props }) => {
-  const navigate = useNavigate();
-  const { isAuthenticated, logoutPopup, logoutRedirect } = useAzureAuthContext();
+  const { instance } = useAzureAuthContext(); // MSAL instance
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogout = async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
+      // ✅ Step 1: Clear all app-specific storage
+      localStorage.removeItem('isAuthenticated');
+      localStorage.removeItem('userData');
+      localStorage.removeItem('authType');
+      localStorage.removeItem('userResource');
 
-      // If authenticated with Azure AD, use Azure logout
-      if (isAuthenticated) {
-        // Try popup first, fallback to redirect
-        try {
-          await logoutPopup?.();
-        } catch (popupError) {
-          console.warn('Popup logout failed, trying redirect:', popupError);
-          await logoutRedirect?.();
-          return; // Redirect will handle navigation
-        }
+      // ✅ Step 2: Get active MSAL account
+      const accounts = instance?.getAllAccounts?.() || [];
+      const account = accounts.length > 0 ? accounts[0] : null;
+
+      console.debug('[Logout] Accounts found:', accounts);
+
+      if (account) {
+        // ✅ Step 3: Trigger MSAL logoutRedirect (ends session + redirects)
+        await instance.logoutRedirect({
+          account,
+          postLogoutRedirectUri: import.meta.env.VITE_AZURE_POST_LOGOUT_REDIRECT_URI || `${window.location.origin}/login`
+        });
+        return; // MSAL will handle redirection
       }
 
-      // Clear local storage for demo users
-      localStorage.removeItem('isAuthenticated');
-      localStorage.removeItem('userData');
+      // ❗ If no MSAL account found (demo user?), fallback to hard redirect
+      window.location.href = '/login';
 
-      // Navigate to login
-      navigate('/login', { replace: true });
-      
     } catch (error) {
-      console.error('Logout error:', error);
-      // Fallback: clear local storage and navigate anyway
-      localStorage.removeItem('isAuthenticated');
-      localStorage.removeItem('userData');
-      navigate('/login', { replace: true });
+      console.error('[Logout] Error during logout:', error);
+      window.location.href = '/login'; // Fallback redirect
     } finally {
       setIsLoading(false);
     }
@@ -53,7 +53,7 @@ const LogoutButton = ({ variant = "outline", className = "", children, ...props 
     >
       {isLoading ? (
         <div className="flex items-center space-x-2">
-          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
           <span>Signing out...</span>
         </div>
       ) : (

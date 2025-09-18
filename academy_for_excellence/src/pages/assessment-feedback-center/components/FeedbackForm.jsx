@@ -20,24 +20,24 @@ const FeedbackForm = ({ course, onSubmit, onCancel }) => {
   });
 
   const ratingOptions = [
-    { value: '5', label: 'Excellent (5/5)' },
-    { value: '4', label: 'Very Good (4/5)' },
-    { value: '3', label: 'Good (3/5)' },
-    { value: '2', label: 'Fair (2/5)' },
-    { value: '1', label: 'Poor (1/5)' }
+    { value: '5 - Excellent (5/5)', label: 'Excellent (5/5)' },
+    { value: '4 - Very Good (4/5)', label: 'Very Good (4/5)' },
+    { value: '3 - Good (3/5)', label: 'Good (3/5)' },
+    { value: '2 - Fair (2/5)', label: 'Fair (2/5)' },
+    { value: '1 - Poor (1/5)', label: 'Poor (1/5)' }
   ];
-
+ 
   const impactOptions = [
-    { value: 'high', label: 'High Impact - Immediately applicable' },
-    { value: 'medium', label: 'Medium Impact - Applicable with adaptation' },
-    { value: 'low', label: 'Low Impact - Limited applicability' },
-    { value: 'none', label: 'No Impact - Not relevant to current projects' }
+    { value: 'High Impact - Immediately applicable', label: 'High Impact - Immediately applicable' },
+    { value: 'Medium Impact - Applicable with adaptation', label: 'Medium Impact - Applicable with adaptation' },
+    { value: 'Low Impact - Limited applicability', label: 'Low Impact - Limited applicability' },
+    { value: 'No Impact - Not relevant to current projects', label: 'No Impact - Not relevant to current projects' }
   ];
-
+ 
   const communicationOptions = [
-    { value: 'direct', label: 'Direct Western-style feedback' },
-    { value: 'relationship', label: 'Relationship-focused approach' },
-    { value: 'mixed', label: 'Balanced approach' }
+    { value: 'Direct Western-style feedback', label: 'Direct Western-style feedback' },
+    { value: 'Relationship-focused approach', label: 'Relationship-focused approach' },
+    { value: 'Balanced approach', label: 'Balanced approach' }
   ];
 
   const handleInputChange = (field, value) => {

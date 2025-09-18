@@ -187,30 +187,53 @@ export const getFeedbackCourses = async () => {
 /**
  * Submit course feedback
  */
-export const submitCourseFeedback = async (courseId, feedbackData) => {
+export const submitCourseFeedback = async (bookingId, courseId, feedbackData) => {
   try {
     const payload = {
-      CourseId: courseId,
-      OverallRating: feedbackData?.overallRating,
-      ContentQuality: feedbackData?.contentQuality,
-      InstructorEffectiveness: feedbackData?.instructorEffectiveness,
-      CulturalRelevance: feedbackData?.culturalRelevance,
-      PracticalApplication: feedbackData?.practicalApplication,
-      Improvements: feedbackData?.improvements,
-      AdditionalComments: feedbackData?.additionalComments,
-      RecommendToOthers: feedbackData?.recommendToOthers,
-      SubmittedBy: 'current-user', // This should be the actual user ID
-      SubmittedDate: new Date()?.toISOString()
+      bookingId: bookingId,
+      courseId: courseId,
+      additionalComments: feedbackData?.additionalComments,
+      anonymous: feedbackData?.anonymous, //boolean
+      communicationStyle: feedbackData?.communicationStyle,
+      contentQuality: feedbackData?.contentQuality,
+      culturalSensitivity: feedbackData?.culturalSensitivity,
+      instructorRating: feedbackData?.instructorRating,
+      overallRating: feedbackData?.overallRating,
+      practicalApplicability: feedbackData?.practicalApplicability,
+      projectImpact: feedbackData?.projectImpact,
+      recommendations: feedbackData?.recommendations,
+      safetyImprovement: feedbackData?.safetyImprovement,
+      submittedBy: 'current-user', // This should be the actual user ID
+      submittedDate: new Date()?.toISOString()
     };
-    
-    const response = await apiCall('POST', '/CourseFeedback', payload);
+    // return;
+    console.log("📡 FeedbackPayload Sent (camelCase):", payload);
+ 
+    // const response = await apiCall('POST', '/courseFeedbacks', payload);
+    const response = await fetch(`${BACKEND_URL}/api/courseFeedbacks`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+ 
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("❌ Backend response:", text);
+      throw new Error(`Failed to create booking: ${response.status} ${text}`);
+    }
+ 
+    console.log('Response from submitCourseFeedback: ', response);
+ 
     return response;
   } catch (error) {
     console.error('Error submitting course feedback:', error);
     throw error;
   }
 };
-
+ 
 // =============================================================================
 // PEER EVALUATION APIs
 // =============================================================================
@@ -218,54 +241,54 @@ export const submitCourseFeedback = async (courseId, feedbackData) => {
 /**
  * Get peer evaluations to be completed
  */
-export const getPeerEvaluations = async () => {
-  try {
-    const response = await apiCall('GET', '/PeerEvaluations');
-    return response?.value?.map(evaluation => ({
-      id: evaluation?.EvaluationId,
-      colleague: {
-        name: evaluation?.ColleagueName,
-        role: evaluation?.ColleagueRole,
-        avatar: evaluation?.ColleagueAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${evaluation?.ColleagueName}`
-      },
-      courseName: evaluation?.CourseName,
-      dueDate: evaluation?.DueDate,
-      status: evaluation?.Status?.toLowerCase()
-    })) || [];
-  } catch (error) {
-    console.error('Error fetching peer evaluations:', error);
-    throw error;
-  }
-};
+// export const getPeerEvaluations = async () => {
+//   try {
+//     const response = await apiCall('GET', '/PeerEvaluations');
+//     return response?.value?.map(evaluation => ({
+//       id: evaluation?.EvaluationId,
+//       colleague: {
+//         name: evaluation?.ColleagueName,
+//         role: evaluation?.ColleagueRole,
+//         avatar: evaluation?.ColleagueAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${evaluation?.ColleagueName}`
+//       },
+//       courseName: evaluation?.CourseName,
+//       dueDate: evaluation?.DueDate,
+//       status: evaluation?.Status?.toLowerCase()
+//     })) || [];
+//   } catch (error) {
+//     console.error('Error fetching peer evaluations:', error);
+//     throw error;
+//   }
+// };
 
-/**
- * Submit peer evaluation
- */
-export const submitPeerEvaluation = async (evaluationId, evaluationData) => {
-  try {
-    const payload = {
-      EvaluationId: evaluationId,
-      Collaboration: evaluationData?.collaboration,
-      Communication: evaluationData?.communication,
-      Professionalism: evaluationData?.professionalism,
-      TechnicalSkills: evaluationData?.technicalSkills,
-      Leadership: evaluationData?.leadership,
-      CulturalAwareness: evaluationData?.culturalAwareness,
-      OverallRating: evaluationData?.overallRating,
-      Strengths: evaluationData?.strengths,
-      ImprovementAreas: evaluationData?.improvementAreas,
-      AdditionalComments: evaluationData?.additionalComments,
-      EvaluatedBy: 'current-user', // This should be the actual user ID
-      EvaluationDate: new Date()?.toISOString()
-    };
+// /**
+//  * Submit peer evaluation
+//  */
+// export const submitPeerEvaluation = async (evaluationId, evaluationData) => {
+//   try {
+//     const payload = {
+//       EvaluationId: evaluationId,
+//       Collaboration: evaluationData?.collaboration,
+//       Communication: evaluationData?.communication,
+//       Professionalism: evaluationData?.professionalism,
+//       TechnicalSkills: evaluationData?.technicalSkills,
+//       Leadership: evaluationData?.leadership,
+//       CulturalAwareness: evaluationData?.culturalAwareness,
+//       OverallRating: evaluationData?.overallRating,
+//       Strengths: evaluationData?.strengths,
+//       ImprovementAreas: evaluationData?.improvementAreas,
+//       AdditionalComments: evaluationData?.additionalComments,
+//       EvaluatedBy: 'current-user', // This should be the actual user ID
+//       EvaluationDate: new Date()?.toISOString()
+//     };
     
-    const response = await apiCall('PUT', `/PeerEvaluations(${evaluationId})`, payload);
-    return response;
-  } catch (error) {
-    console.error('Error submitting peer evaluation:', error);
-    throw error;
-  }
-};
+//     const response = await apiCall('PUT', `/PeerEvaluations(${evaluationId})`, payload);
+//     return response;
+//   } catch (error) {
+//     console.error('Error submitting peer evaluation:', error);
+//     throw error;
+//   }
+// };
 
 // =============================================================================
 // UTILITY FUNCTIONS
@@ -1361,8 +1384,8 @@ export default {
   getFeedbackCourses,
   submitCourseFeedback,
   // Peer Evaluation APIs
-  getPeerEvaluations,
-  submitPeerEvaluation,
+  // getPeerEvaluations,
+  // submitPeerEvaluation,
   // Course APIs
   getCourses,
   getCourseById,

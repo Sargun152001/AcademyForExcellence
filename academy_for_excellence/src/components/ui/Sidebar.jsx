@@ -34,6 +34,23 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
   const isActivePath = (path) => location?.pathname === path;
   const shouldShowText = !isCollapsed || isHovered;
 
+  
+  const openTeams = () => {
+   
+    window.location.href = 'msteams://';
+    
+    // setTimeout(() => {
+    //   window.open('https://teams.microsoft.com', '_blank');
+    // }, 1000);
+  };
+
+  const openOutlook = () => {
+    window.location.href = "outlook://";
+    setTimeout(() => {
+      window.open("https://outlook.office.com/mail/", "_blank");
+    }, 800);
+  };
+
   return (
     <aside
       className={`fixed left-0 top-16 h-[calc(100vh-4rem)] bg-card border-r border-border construction-shadow z-40 construction-transition ${
@@ -114,27 +131,38 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
         </nav>
 
         {/* Sidebar Footer */}
-        <div className="p-4 border-t border-border">
+        <div className="p-4 border-t border-border space-y-2">
           {/* Quick Actions */}
-          <div className="space-y-2">
-            <Button
-              variant="ghost"
-              className={`w-full justify-start ${!shouldShowText ? 'px-3' : ''}`}
-              title={isCollapsed && !isHovered ? 'Settings' : ''}
-            >
-              <Icon name="Settings" size={20} className="flex-shrink-0" />
-              {shouldShowText && <span className="ml-3">Settings</span>}
-            </Button>
-            
-            <Button
-              variant="ghost"
-              className={`w-full justify-start ${!shouldShowText ? 'px-3' : ''}`}
-              title={isCollapsed && !isHovered ? 'Help & Support' : ''}
-            >
-              <Icon name="HelpCircle" size={20} className="flex-shrink-0" />
-              {shouldShowText && <span className="ml-3">Help & Support</span>}
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            className={`w-full justify-start ${!shouldShowText ? 'px-3' : ''}`}
+            title={isCollapsed && !isHovered ? 'Settings' : ''}
+          >
+            <Icon name="Settings" size={20} className="flex-shrink-0" />
+            {shouldShowText && <span className="ml-3">Settings</span>}
+          </Button>
+          
+          <Button
+            variant="ghost"
+            className={`w-full justify-start ${!shouldShowText ? 'px-3' : ''}`}
+            title={isCollapsed && !isHovered ? 'Help & Support' : ''}
+          >
+            <Icon name="HelpCircle" size={20} className="flex-shrink-0" />
+            {shouldShowText && <span className="ml-3">Help & Support</span>}
+          </Button>
+
+          {/* Teams Button */}
+          <Button
+            variant="ghost"
+            onClick={openTeams}
+            className={`w-full justify-start ${!shouldShowText ? 'px-3' : ''}`}
+            title={isCollapsed && !isHovered ? 'Open Teams' : ''}
+          >
+            <Icon name="MicrosoftTeams" size={20} className="flex-shrink-0" />
+            {shouldShowText && <span className="ml-3">Open Teams</span>}
+          </Button>
+
+          
 
           {/* User Progress Summary */}
           {shouldShowText && (

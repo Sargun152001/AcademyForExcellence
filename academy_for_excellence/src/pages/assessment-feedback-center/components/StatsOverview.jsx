@@ -1,11 +1,11 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
 
-const StatsOverview = ({ stats }) => {
+const StatsOverview = ({ stats, pendingFeedbackCount = 0 }) => {
   const statCards = [
     {
       title: 'Completed Assessments',
-      value: stats?.completedAssessments,
+      value: stats?.completedAssessments || 0,
       icon: 'CheckCircle',
       color: 'text-success',
       bgColor: 'bg-success/10',
@@ -14,7 +14,7 @@ const StatsOverview = ({ stats }) => {
     },
     {
       title: 'Pending Evaluations',
-      value: stats?.pendingEvaluations,
+      value: stats?.pendingEvaluations || 0,
       icon: 'Clock',
       color: 'text-warning',
       bgColor: 'bg-warning/10',
@@ -22,25 +22,15 @@ const StatsOverview = ({ stats }) => {
       changeType: 'negative'
     },
     {
-      title: 'Average Score',
-      value: `${stats?.averageScore}%`,
+      title: 'Pending Course Feedback',
+      value: pendingFeedbackCount, // Use the prop instead of stats?.averageScore
       icon: 'TrendingUp',
       color: 'text-primary',
       bgColor: 'bg-primary/10',
       change: '+8%',
       changeType: 'positive'
-    },
-    {
-      title: 'Peer Reviews Given',
-      value: stats?.peerReviewsGiven,
-      icon: 'Users',
-      color: 'text-confidence-teal',
-      bgColor: 'bg-confidence-teal/10',
-      change: '+15%',
-      changeType: 'positive'
     }
   ];
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       {statCards?.map((stat, index) => (
@@ -49,11 +39,11 @@ const StatsOverview = ({ stats }) => {
             <div className={`w-12 h-12 rounded-lg ${stat?.bgColor} flex items-center justify-center`}>
               <Icon name={stat?.icon} size={24} className={stat?.color} />
             </div>
-            <div className={`text-sm font-medium ${
+            {/* <div className={`text-sm font-medium ${
               stat?.changeType === 'positive' ? 'text-success' : 'text-error'
             }`}>
               {stat?.change}
-            </div>
+            </div> */}
           </div>
           
           <div className="space-y-1">

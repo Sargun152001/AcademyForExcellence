@@ -53,7 +53,7 @@ const AssessmentFeedbackCenter = () => {
   const tabs = [
     { id: 'assessments', label: 'My Assessments', icon: 'ClipboardCheck' },
     { id: 'feedback', label: 'Course Feedback', icon: 'MessageSquare' },
-    { id: 'peer-evaluation', label: 'Peer Evaluations', icon: 'Users' }
+    // { id: 'peer-evaluation', label: 'Peer Evaluations', icon: 'Users' }
   ];
 
   const statusOptions = [
@@ -188,8 +188,12 @@ const AssessmentFeedbackCenter = () => {
       //   throw new Error('Not connected to Business Central');
       // }
 
-      console.log("Data to be send: ", selectedCourse?.bookingId, selectedCourse?.courseId, feedbackData);
-      await submitFeedback(selectedCourse?.bookingId, selectedCourse?.courseId, feedbackData);
+      // console.log("Data to be send: ", selectedCourse?.bookingId, selectedCourse?.courseId, feedbackData);
+      
+      console.log("Feedback data: ", feedbackData)
+      const result = await submitFeedback(selectedCourse?.bookingId, selectedCourse?.courseId, feedbackData);
+
+      console.log("result after submitFeedback: ", result)
       
       // await submitFeedback(selectedCourse?.id, feedbackData);
       alert('Feedback submitted successfully to Business Central!');
@@ -226,7 +230,7 @@ const AssessmentFeedbackCenter = () => {
     return statusMatch && typeMatch;
   }) || [];
 
-  console.log('Scheduled Bookings: ', feedbackCourses)
+  // console.log('Scheduled Bookings: ', feedbackCourses)
 
   const pendingFeedbackCourses = feedbackCourses?.filter(course => {
     const courseDateTime = new Date(`${course?.date}T${course?.time}`);
@@ -304,7 +308,7 @@ const AssessmentFeedbackCenter = () => {
               <div className="mt-2 text-sm text-red-700 space-y-1">
                 {assessmentsError && <div>• Assessments: {assessmentsError}</div>}
                 {feedbackError && <div>• Feedback: {feedbackError}</div>}
-                {peerError && <div>• Peer Evaluations: {peerError}</div>}
+                {/* {peerError && <div>• Peer Evaluations: {peerError}</div>} */}
               </div>
               <div className="mt-3 text-sm text-red-600">
                 Some data may be incomplete. Please check your connection to Business Central.
@@ -323,7 +327,7 @@ const AssessmentFeedbackCenter = () => {
           )}
 
           {/* Stats Overview */}
-          <StatsOverview stats={stats} loading={assessmentsLoading} />
+          <StatsOverview stats={stats} loading={assessmentsLoading} pendingFeedbackCount={pendingFeedbackCourses?.length || 0} />
 
           {/* Navigation Tabs */}
           <div className="bg-white rounded-lg border border-border construction-shadow mb-8">
@@ -383,7 +387,7 @@ const AssessmentFeedbackCenter = () => {
                           assessment={assessment}
                           onStartAssessment={handleStartAssessment}
                           onViewResults={handleViewResults}
-                          disabled={!isConnected}
+                          // disabled={!isConnected}
                         />
                       ))}
                     </div>
@@ -474,7 +478,7 @@ const AssessmentFeedbackCenter = () => {
               )}
 
               {/* Peer Evaluation Tab */}
-              {activeTab === 'peer-evaluation' && (
+              {/* {activeTab === 'peer-evaluation' && (
                 <div>
                   <div className="mb-6">
                     <h3 className="text-lg font-semibold text-authority-charcoal mb-2">
@@ -508,7 +512,7 @@ const AssessmentFeedbackCenter = () => {
                     </div>
                   )}
                 </div>
-              )}
+              )} */}
             </div>
           </div>
         </div>
