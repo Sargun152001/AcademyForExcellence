@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Icon from '../AppIcon';
 import Button from './Button';
-
+ 
 const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
   const [isHovered, setIsHovered] = useState(false);
   const location = useLocation();
-
+ 
   const navigationItems = [
     {
       category: 'Learning',
@@ -30,27 +30,10 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
       ]
     }
   ];
-
+ 
   const isActivePath = (path) => location?.pathname === path;
   const shouldShowText = !isCollapsed || isHovered;
-
-  
-  const openTeams = () => {
-   
-    window.location.href = 'msteams://';
-    
-    // setTimeout(() => {
-    //   window.open('https://teams.microsoft.com', '_blank');
-    // }, 1000);
-  };
-
-  const openOutlook = () => {
-    window.location.href = "outlook://";
-    setTimeout(() => {
-      window.open("https://outlook.office.com/mail/", "_blank");
-    }, 800);
-  };
-
+ 
   return (
     <aside
       className={`fixed left-0 top-16 h-[calc(100vh-4rem)] bg-card border-r border-border construction-shadow z-40 construction-transition ${
@@ -74,14 +57,14 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
               onClick={onToggleCollapse}
               className="ml-auto"
             >
-              <Icon 
-                name={isCollapsed ? "ChevronRight" : "ChevronLeft"} 
-                size={20} 
+              <Icon
+                name={isCollapsed ? "ChevronRight" : "ChevronLeft"}
+                size={20}
               />
             </Button>
           )}
         </div>
-
+ 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4">
           <div className="space-y-6">
@@ -94,7 +77,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
                     </h3>
                   </div>
                 )}
-                
+               
                 <div className="space-y-1 px-2">
                   {category?.items?.map((item) => (
                     <Link
@@ -107,15 +90,15 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
                       }`}
                       title={isCollapsed && !isHovered ? item?.name : ''}
                     >
-                      <Icon 
-                        name={item?.icon} 
-                        size={20} 
+                      <Icon
+                        name={item?.icon}
+                        size={20}
                         className="flex-shrink-0"
                       />
                       {shouldShowText && (
                         <span className="truncate">{item?.name}</span>
                       )}
-                      
+                     
                       {/* Tooltip for collapsed state */}
                       {isCollapsed && !isHovered && (
                         <div className="absolute left-full ml-2 px-2 py-1 bg-authority-charcoal text-white text-xs rounded opacity-0 group-hover:opacity-100 construction-transition pointer-events-none whitespace-nowrap z-50">
@@ -129,41 +112,30 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
             ))}
           </div>
         </nav>
-
+ 
         {/* Sidebar Footer */}
-        <div className="p-4 border-t border-border space-y-2">
+        <div className="p-4 border-t border-border">
           {/* Quick Actions */}
-          <Button
-            variant="ghost"
-            className={`w-full justify-start ${!shouldShowText ? 'px-3' : ''}`}
-            title={isCollapsed && !isHovered ? 'Settings' : ''}
-          >
-            <Icon name="Settings" size={20} className="flex-shrink-0" />
-            {shouldShowText && <span className="ml-3">Settings</span>}
-          </Button>
-          
-          <Button
-            variant="ghost"
-            className={`w-full justify-start ${!shouldShowText ? 'px-3' : ''}`}
-            title={isCollapsed && !isHovered ? 'Help & Support' : ''}
-          >
-            <Icon name="HelpCircle" size={20} className="flex-shrink-0" />
-            {shouldShowText && <span className="ml-3">Help & Support</span>}
-          </Button>
-
-          {/* Teams Button */}
-          <Button
-            variant="ghost"
-            onClick={openTeams}
-            className={`w-full justify-start ${!shouldShowText ? 'px-3' : ''}`}
-            title={isCollapsed && !isHovered ? 'Open Teams' : ''}
-          >
-            <Icon name="MicrosoftTeams" size={20} className="flex-shrink-0" />
-            {shouldShowText && <span className="ml-3">Open Teams</span>}
-          </Button>
-
-          
-
+          <div className="space-y-2">
+            <Button
+              variant="ghost"
+              className={`w-full justify-start ${!shouldShowText ? 'px-3' : ''}`}
+              title={isCollapsed && !isHovered ? 'Settings' : ''}
+            >
+              <Icon name="Settings" size={20} className="flex-shrink-0" />
+              {shouldShowText && <span className="ml-3">Settings</span>}
+            </Button>
+           
+            <Button
+              variant="ghost"
+              className={`w-full justify-start ${!shouldShowText ? 'px-3' : ''}`}
+              title={isCollapsed && !isHovered ? 'Help & Support' : ''}
+            >
+              <Icon name="HelpCircle" size={20} className="flex-shrink-0" />
+              {shouldShowText && <span className="ml-3">Help & Support</span>}
+            </Button>
+          </div>
+ 
           {/* User Progress Summary */}
           {shouldShowText && (
             <div className="mt-4 p-3 bg-muted rounded-lg">
@@ -179,8 +151,8 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
                   <span className="font-medium text-authority-charcoal">12/20</span>
                 </div>
                 <div className="w-full bg-border rounded-full h-1.5">
-                  <div 
-                    className="bg-success h-1.5 rounded-full construction-transition" 
+                  <div
+                    className="bg-success h-1.5 rounded-full construction-transition"
                     style={{ width: '60%' }}
                   ></div>
                 </div>
@@ -192,5 +164,5 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
     </aside>
   );
 };
-
+ 
 export default Sidebar;

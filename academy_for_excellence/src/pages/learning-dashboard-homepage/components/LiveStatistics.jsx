@@ -171,6 +171,41 @@ const LiveStatistics = () => {
           ))}
         </div>
       </div> */}
+
+
+{/* Communication Channels */}
+<div className="bg-card rounded-xl p-6 construction-shadow">
+  <div className="flex items-center justify-between mb-6">
+    <h3 className="text-xl font-heading font-semibold text-authority-charcoal">
+      Communication Channels
+    </h3>
+  </div>
+
+  <div className="space-y-3">
+    <button
+      onClick={() => {
+        window.open("https://teams.microsoft.com", "_blank");
+      }}
+      className="flex items-center px-4 py-3 rounded-lg bg-primary text-white hover:bg-primary/90 transition w-full"
+    >
+      <Icon name="MessageSquare" size={20} className="mr-2" />
+      <span className="font-medium text-base">Open Microsoft Teams</span>
+    </button>
+
+    <button
+      onClick={() => {
+        window.open("https://outlook.office.com/mail/", "_blank");
+      }}
+      className="flex items-center px-4 py-3 rounded-lg bg-primary text-white hover:bg-primary/90 transition w-full"
+    >
+      <Icon name="Mail" size={20} className="mr-2" />
+      <span className="font-medium text-base">Open Microsoft Outlook</span>
+    </button>
+  </div>
+</div>
+
+
+
       {/* Upcoming Deadlines */}
       <div className="bg-card rounded-xl p-6 construction-shadow">
         <div className="flex items-center justify-between mb-6">
