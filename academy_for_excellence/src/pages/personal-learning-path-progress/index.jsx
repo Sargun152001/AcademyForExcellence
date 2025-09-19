@@ -388,7 +388,7 @@ useEffect(() => {
     { id: 'skills', label: 'Skills Progress', icon: 'TrendingUp' },
     { id: 'achievements', label: 'Achievements', icon: 'Award' },
     { id: 'certifications', label: 'Certifications', icon: 'Certificate' },
-    { id: 'activity', label: 'Recent Activity', icon: 'Activity' }
+    { id: 'activity', label: 'KPIs', icon: 'Activity' }
   ];
 
   return (

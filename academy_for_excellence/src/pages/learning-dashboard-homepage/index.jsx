@@ -14,24 +14,7 @@ const LearningDashboardHomepage = () => {
   const [currentLanguage, setCurrentLanguage] = useState('en');
 
   // Mock user data
-  const userData = {
-    employee: {
-      name: "Ahmed Al-Rashid",
-      title: "Senior Project Manager",
-      role: "employee"
-    },
-    manager: {
-      name: "Sarah Al-Zahra",
-      title: "Construction Director",
-      role: "manager"
-    },
-    instructor: {
-      name: "Dr. Hassan Al-Mahmoud",
-      title: "Lead Instructor",
-      role: "instructor"
-    }
-  };
-
+  const userData =JSON.parse(localStorage.getItem('userData') || '{}');
   useEffect(() => {
     // Check for saved language preference
     const savedLanguage = localStorage.getItem('preferredLanguage');
@@ -52,7 +35,7 @@ const LearningDashboardHomepage = () => {
     localStorage.setItem('sidebarCollapsed', JSON.stringify(newState));
   };
 
-  const currentUser = userData?.[userRole];
+  const currentUser = userData?.role;
 
   return (
     <>
@@ -76,8 +59,8 @@ const LearningDashboardHomepage = () => {
             <div className="mb-8">
               <WelcomeHero 
                 userRole={userRole}
-                userName={currentUser?.name}
-                userTitle={currentUser?.title}
+                userName={userData?.name}
+                userTitle={userData.role}
               />
             </div>
 
