@@ -1464,6 +1464,41 @@ export const getCertificates = async (resourceId) => {
   }
 };
 
+
+export const getCertificatesForAll = async () => {
+  try {
+ 
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const isoDate = sevenDaysAgo.toISOString(); // e.g. 2025-09-11T10:23:45.000Z
+ 
+    const filterQuery = `$filter=completedAt ge ${isoDate}`;
+    const url = `${BACKEND_URL}/api/resourceCertificatess?${filterQuery}`;
+    console.log("📡 Full getCertificatiesForAll URL being called:", url);
+ 
+    const res = await fetch(url, {
+      headers: { Accept: "application/json" },
+    });
+ 
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Backend error for getCertificates: ${res.status} ${text}`);
+    }
+ 
+    const data = await res.json();
+ 
+    const arr = data?.value || [];
+ 
+    console.log("Raw backend response for CertificatesAll:", data);
+ 
+    return arr;
+ 
+  } catch (err) {
+    console.error("❌ Error in CertificatesAll (frontend):", err);
+    throw err;
+  }
+};
+
 /**
  * Request course refund
  */
