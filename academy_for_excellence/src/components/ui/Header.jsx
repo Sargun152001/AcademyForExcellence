@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Icon from '../AppIcon';
 import { useAzureAuthContext } from 'components/AzureAuthProvider';
+import Image from 'components/AppImage';
  
  
 const Header = () => {
@@ -29,8 +30,9 @@ const handleLogout = async () => {
         return; // Redirect will handle navigation
       }
     }
-    localStorage.removeItem('isAuthenticated');
+   localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('userData');
+    localStorage.removeItem('userResource');
     navigate('/login');
   };
   const primaryNavItems = [
@@ -86,7 +88,12 @@ const handleLogout = async () => {
                 className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-muted construction-transition"
               >
                 <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                  <Icon name="User" size={16} className="text-white" />
+                  {/* <Icon name="User" size={16} className="text-white" /> */}
+                  <Image
+                    src={userData?.imageUrl}
+                    alt={userData?.title}
+                    className="w-full h-full object-cover rounded-t-lg lg:rounded-l-lg lg:rounded-t-none"
+                  />
                 </div>
                 <div className="hidden md:block text-left">
                   <div className="text-sm font-semibold text-construction-blue">

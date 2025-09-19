@@ -9,10 +9,16 @@ import LearningPathTimeline from './components/LearningPathTimeline';
 import AchievementBadge from './components/AchievementBadge';
 import CertificationRoadmap from './components/CertificationRoadmap';
 import RecentActivity from './components/RecentActivity';
+import { getSkillProgress , getCertificates} from "../../services/businessCentralApi";
+
 
 const PersonalLearningPathProgress = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [currentLanguage, setCurrentLanguage] = useState('en');
+  const [loading, setLoading] = useState(false);
+  const [skillsProgress, setSkillsProgress] = useState([]);
+  const [certifications, setCertifications] = useState([]); 
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const savedLanguage = localStorage.getItem('selectedLanguage') || 'en';
@@ -20,17 +26,8 @@ const PersonalLearningPathProgress = () => {
   }, []);
 
   // Mock data for user progress
-  const userProfile = {
-    name: "Ahmed Al-Rashid",
-    role: "Senior Project Manager",
-    department: "Infrastructure Development",
-    joinDate: "2023-01-15",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-    currentLevel: "Advanced Professional",
-    totalPoints: 2847,
-    rank: 12,
-    nextLevelPoints: 3000
-  };
+  const userProfile  = JSON.parse(localStorage.getItem('userData') || '{}');
+  const resourceId = userProfile?.id
 
   const overviewData = {
     coursesCompleted: 18,
@@ -43,51 +40,116 @@ const PersonalLearningPathProgress = () => {
     totalSkills: 15
   };
 
-  const skillsProgress = [
-    {
-      id: 1,
-      skill: "Project Planning & Scheduling",
-      progress: 92,
-      level: "Expert",
-      nextMilestone: "Advanced Risk Management",
-      isActive: true
-    },
-    {
-      id: 2,
-      skill: "Middle Eastern Construction Standards",
-      progress: 78,
-      level: "Advanced",
-      nextMilestone: "Regional Compliance Certification"
-    },
-    {
-      id: 3,
-      skill: "Team Leadership & Communication",
-      progress: 85,
-      level: "Advanced",
-      nextMilestone: "Cross-Cultural Management"
-    },
-    {
-      id: 4,
-      skill: "Digital Project Management Tools",
-      progress: 65,
-      level: "Intermediate",
-      nextMilestone: "BIM Integration Mastery"
-    },
-    {
-      id: 5,
-      skill: "Quality Control & Assurance",
-      progress: 71,
-      level: "Intermediate",
-      nextMilestone: "ISO Certification Prep"
-    },
-    {
-      id: 6,
-      skill: "Sustainable Construction Practices",
-      progress: 43,
-      level: "Foundation",
-      nextMilestone: "Green Building Fundamentals"
+  // const skillsProgress = [
+  //   {
+  //     id: 1,
+  //     skill: "Project Planning & Scheduling",
+  //     progress: 92,
+  //     level: "Expert",
+  //     nextMilestone: "Advanced Risk Management",
+  //     isActive: true
+  //   },
+  //   {
+  //     id: 2,
+  //     skill: "Middle Eastern Construction Standards",
+  //     progress: 78,
+  //     level: "Advanced",
+  //     nextMilestone: "Regional Compliance Certification"
+  //   },
+  //   {
+  //     id: 3,
+  //     skill: "Team Leadership & Communication",
+  //     progress: 85,
+  //     level: "Advanced",
+  //     nextMilestone: "Cross-Cultural Management"
+  //   },
+  //   {
+  //     id: 4,
+  //     skill: "Digital Project Management Tools",
+  //     progress: 65,
+  //     level: "Intermediate",
+  //     nextMilestone: "BIM Integration Mastery"
+  //   },
+  //   {
+  //     id: 5,
+  //     skill: "Quality Control & Assurance",
+  //     progress: 71,
+  //     level: "Intermediate",
+  //     nextMilestone: "ISO Certification Prep"
+  //   },
+  //   {
+  //     id: 6,
+  //     skill: "Sustainable Construction Practices",
+  //     progress: 43,
+  //     level: "Foundation",
+  //     nextMilestone: "Green Building Fundamentals"
+  //   }
+  // ];
+
+   useEffect(() => {
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+       console.log("Fetching skills for resourceId:", resourceId);
+      const res = await getSkillProgress(resourceId);
+      console.log("✅ API Response:", res);
+
+      const mapped = res.filter(item => item.skillStatus === "Have")
+      .map((item, index) => ({
+        id: item.systemId || index, // unique key
+        skill: item.skill,
+        progress: parseInt(item.progress, 10) || 0,
+        level: item.level,
+        nextMilestone: item.skillStatus,
+        isActive: item.skillStatus === "Active",
+      }));
+  console.log("✅ Mapped skills:", mapped);
+      setSkillsProgress(mapped);
+    } catch (err) {
+      console.error("❌ Failed to fetch skills progress:", err);
+      setError("Failed to load skill progress");
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  if (resourceId) fetchData();
+}, [resourceId]);
+
+
+useEffect(() => {
+  const fetchCerts = async () => {
+    try {
+      setLoading(true);
+      console.log("Fetching certificates for resourceId:", resourceId);
+      const res = await getCertificates(resourceId);
+
+      const mapped = res.map((item, index) => ({
+        id: item.systemId || index,
+        title: item.title,
+        description: item.description,
+        duration: item.duration,
+        provider: item.provider || "",    
+        track: "project-management",        
+        difficulty: null,                
+        completed: item.status === "Completed",
+        inProgress: item.status?.includes("In_x0020_Progress"),
+        earnedDate: item.completedAt !== "0001-01-01" ? item.completedAt : null,
+      }));
+
+      console.log("✅ Mapped certificates:", mapped);
+      setCertifications(mapped);
+    } catch (err) {
+      console.error("❌ Failed to fetch certificates:", err);
+      setError("Failed to load certificates");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (resourceId) fetchCerts();
+}, [resourceId]);
+
 
   const learningPathData = [
     {
@@ -198,69 +260,69 @@ const PersonalLearningPathProgress = () => {
     }
   ];
 
-  const certifications = [
-    {
-      id: 'pmp',
-      title: 'Project Management Professional (PMP)',
-      provider: 'PMI',
-      track: 'project-management',
-      description: 'Globally recognized project management certification',
-      duration: '6 months',
-      difficulty: 4,
-      isPopular: true,
-      prerequisites: []
-    },
-    {
-      id: 'capm',
-      title: 'Certified Associate in Project Management',
-      provider: 'PMI',
-      track: 'project-management',
-      description: 'Entry-level project management certification',
-      duration: '3 months',
-      difficulty: 2,
-      prerequisites: []
-    },
-    {
-      id: 'regional-compliance',
-      title: 'Middle Eastern Construction Compliance',
-      provider: 'Regional Construction Council',
-      track: 'regional-expertise',
-      description: 'Specialized certification for regional construction standards',
-      duration: '4 months',
-      difficulty: 3,
-      prerequisites: ['capm']
-    },
-    {
-      id: 'cultural-management',
-      title: 'Cross-Cultural Project Management',
-      provider: 'Academy for Excellence',
-      track: 'regional-expertise',
-      description: 'Managing diverse teams in Middle Eastern contexts',
-      duration: '2 months',
-      difficulty: 3,
-      prerequisites: []
-    },
-    {
-      id: 'bim-integration',
-      title: 'BIM Integration Specialist',
-      provider: 'Digital Construction Institute',
-      track: 'technical-skills',
-      description: 'Advanced Building Information Modeling techniques',
-      duration: '5 months',
-      difficulty: 4,
-      prerequisites: []
-    },
-    {
-      id: 'sustainable-construction',
-      title: 'Sustainable Construction Practices',
-      provider: 'Green Building Council',
-      track: 'technical-skills',
-      description: 'Environmental and sustainable construction methods',
-      duration: '3 months',
-      difficulty: 3,
-      prerequisites: []
-    }
-  ];
+  // const certifications = [
+  //   {
+  //     id: 'pmp',
+  //     title: 'Project Management Professional (PMP)',
+  //     provider: 'PMI',
+  //     track: 'project-management',
+  //     description: 'Globally recognized project management certification',
+  //     duration: '6 months',
+  //     difficulty: 4,
+  //     isPopular: true,
+  //     prerequisites: []
+  //   },
+  //   {
+  //     id: 'capm',
+  //     title: 'Certified Associate in Project Management',
+  //     provider: 'PMI',
+  //     track: 'project-management',
+  //     description: 'Entry-level project management certification',
+  //     duration: '3 months',
+  //     difficulty: 2,
+  //     prerequisites: []
+  //   },
+  //   {
+  //     id: 'regional-compliance',
+  //     title: 'Middle Eastern Construction Compliance',
+  //     provider: 'Regional Construction Council',
+  //     track: 'regional-expertise',
+  //     description: 'Specialized certification for regional construction standards',
+  //     duration: '4 months',
+  //     difficulty: 3,
+  //     prerequisites: ['capm']
+  //   },
+  //   {
+  //     id: 'cultural-management',
+  //     title: 'Cross-Cultural Project Management',
+  //     provider: 'Academy for Excellence',
+  //     track: 'regional-expertise',
+  //     description: 'Managing diverse teams in Middle Eastern contexts',
+  //     duration: '2 months',
+  //     difficulty: 3,
+  //     prerequisites: []
+  //   },
+  //   {
+  //     id: 'bim-integration',
+  //     title: 'BIM Integration Specialist',
+  //     provider: 'Digital Construction Institute',
+  //     track: 'technical-skills',
+  //     description: 'Advanced Building Information Modeling techniques',
+  //     duration: '5 months',
+  //     difficulty: 4,
+  //     prerequisites: []
+  //   },
+  //   {
+  //     id: 'sustainable-construction',
+  //     title: 'Sustainable Construction Practices',
+  //     provider: 'Green Building Council',
+  //     track: 'technical-skills',
+  //     description: 'Environmental and sustainable construction methods',
+  //     duration: '3 months',
+  //     difficulty: 3,
+  //     prerequisites: []
+  //   }
+  // ];
 
   const userProgress = {
     certifications: [
@@ -340,13 +402,13 @@ const PersonalLearningPathProgress = () => {
               <div className="flex items-center space-x-6 mb-6 lg:mb-0">
                 <div className="relative">
                   <img
-                    src={userProfile?.avatar}
+                    src={userProfile?.imageUrl}
                     alt={userProfile?.name}
                     className="w-24 h-24 rounded-full border-4 border-primary-foreground/20"
                   />
-                  <div className="absolute -bottom-2 -right-2 bg-accent text-accent-foreground rounded-full px-2 py-1 text-xs font-bold">
+                  {/* <div className="absolute -bottom-2 -right-2 bg-accent text-accent-foreground rounded-full px-2 py-1 text-xs font-bold">
                     #{userProfile?.rank}
-                  </div>
+                  </div> */}
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold mb-2">{userProfile?.name}</h1>
@@ -354,39 +416,39 @@ const PersonalLearningPathProgress = () => {
                   <p className="text-primary-foreground/60 text-sm">{userProfile?.department}</p>
                   <div className="flex items-center space-x-4 mt-3">
                     <div className="flex items-center space-x-2">
-                      <Icon name="Calendar" size={16} />
+                      {/* <Icon name="Calendar" size={16} /> */}
                       <span className="text-sm">
-                        Joined {new Date(userProfile.joinDate)?.toLocaleDateString('en-US', {
+                        {/* Joined {new Date(userProfile.joinDate)?.toLocaleDateString('en-US', {
                           month: 'long',
-                          year: 'numeric'
-                        })}
+                          year: 'numeric' */}
+                        {/* })} */}
                       </span>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    {/* <div className="flex items-center space-x-2">
                       <Icon name="Star" size={16} />
                       <span className="text-sm">{userProfile?.totalPoints} points</span>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               </div>
 
               <div className="text-center lg:text-right">
                 <div className="bg-primary-foreground/10 rounded-lg p-6 backdrop-blur-sm">
-                  <h3 className="text-lg font-semibold mb-2">{userProfile?.currentLevel}</h3>
+                  {/* <h3 className="text-lg font-semibold mb-2">{userProfile?.currentLevel}</h3> */}
                   <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
+                    {/* <div className="flex justify-between text-sm">
                       <span>Progress to Expert</span>
                       <span>{userProfile?.totalPoints}/{userProfile?.nextLevelPoints}</span>
-                    </div>
+                    </div> */}
                     <div className="w-48 bg-primary-foreground/20 rounded-full h-2">
-                      <div 
+                      {/* <div 
                         className="bg-accent h-2 rounded-full construction-transition"
                         style={{ width: `${(userProfile?.totalPoints / userProfile?.nextLevelPoints) * 100}%` }}
-                      ></div>
+                      ></div> */}
                     </div>
-                    <p className="text-xs text-primary-foreground/70">
+                    {/* <p className="text-xs text-primary-foreground/70">
                       {userProfile?.nextLevelPoints - userProfile?.totalPoints} points to next level
-                    </p>
+                    </p> */}
                   </div>
                 </div>
               </div>
@@ -427,9 +489,12 @@ const PersonalLearningPathProgress = () => {
                   <div>
                     <h3 className="text-xl font-semibold text-authority-charcoal mb-4">Top Skills Progress</h3>
                     <div className="space-y-4">
-                      {skillsProgress?.slice(0, 3)?.map((skill) => (
-                        <SkillProgressCard key={skill?.id} {...skill} />
-                      ))}
+                     {skillsProgress
+  ?.sort((a, b) => b.progress - a.progress)   
+  ?.slice(0, 3)                               
+  ?.map((skill) => (
+    <SkillProgressCard key={skill?.id} {...skill} />
+  ))}
                     </div>
                   </div>
 
@@ -437,7 +502,7 @@ const PersonalLearningPathProgress = () => {
                     <h3 className="text-xl font-semibold text-authority-charcoal mb-4">Recent Achievements</h3>
                     <div className="grid grid-cols-3 gap-4">
                       {achievements?.slice(0, 6)?.map((achievement) => (
-                        <AchievementBadge key={achievement?.id} achievement={achievement} size="small" showDetails={false} />
+                        <AchievementBadge key={achievement?.id} achievement={achievement} size="small" showDetails={true} />
                       ))}
                     </div>
                   </div>
@@ -500,11 +565,11 @@ const PersonalLearningPathProgress = () => {
                   <h2 className="text-2xl font-bold text-authority-charcoal">Certification Roadmap</h2>
                   <div className="flex items-center space-x-4">
                     <div className="text-sm text-professional-gray">
-                      {userProgress?.certifications?.filter(c => c?.completed)?.length || 0} of {certifications?.length} completed
+                      {certifications?.filter(c => c?.completed)?.length || 0} of {certifications?.length} completed
                     </div>
-                    <Button variant="outline" iconName="ExternalLink">
+                    {/* <Button variant="outline" iconName="ExternalLink">
                       View All Certifications
-                    </Button>
+                    </Button> */}
                   </div>
                 </div>
                 <CertificationRoadmap certifications={certifications} userProgress={userProgress} />

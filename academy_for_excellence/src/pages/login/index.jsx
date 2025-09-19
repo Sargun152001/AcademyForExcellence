@@ -101,7 +101,8 @@ const LoginPage = () => {
         name: resource.name,
         title: resource.designation,
         email: resource.eMail,
-        role: resource.designation
+        role: resource.designation,
+        imageUrl: resource.image ? `data:image/jpeg;base64,${resource.image.replace(/\s/g, '')}` : null
       };
 
       console.log('[DEBUG] Mapped BC Resource:', mappedResource);

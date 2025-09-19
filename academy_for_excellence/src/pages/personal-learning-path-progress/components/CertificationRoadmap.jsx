@@ -1,34 +1,14 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
 const CertificationRoadmap = ({ certifications, userProgress }) => {
-  const [selectedTrack, setSelectedTrack] = useState('project-management');
-
-  const certificationTracks = {
-    'project-management': {
-      title: 'Project Management Track',
-      description: 'Core PM certifications for construction leadership',
-      color: 'primary'
-    },
-    'regional-expertise': {
-      title: 'Regional Expertise Track',
-      description: 'Middle Eastern construction specializations',
-      color: 'accent'
-    },
-    'technical-skills': {
-      title: 'Technical Skills Track',
-      description: 'Advanced technical and digital competencies',
-      color: 'confidence-teal'
-    }
-  };
-
   const getCertificationStatus = (cert) => {
-    const userCert = userProgress?.certifications?.find(uc => uc?.id === cert?.id);
+    const userCert = certifications?.find(uc => uc?.id === cert?.id);
     if (userCert?.completed) return 'completed';
     if (userCert?.inProgress) return 'in-progress';
     if (cert?.prerequisites?.every(prereq => 
-      userProgress?.certifications?.some(uc => uc?.id === prereq && uc?.completed)
+      certifications?.some(uc => uc?.id === prereq && uc?.completed)
     )) return 'available';
     return 'locked';
   };
@@ -51,54 +31,44 @@ const CertificationRoadmap = ({ certifications, userProgress }) => {
     }
   };
 
-  const filteredCertifications = certifications?.filter(cert => cert?.track === selectedTrack);
-
   return (
     <div className="space-y-6">
-      {/* Track Selection */}
-      <div className="flex flex-wrap gap-2">
-        {Object.entries(certificationTracks)?.map(([key, track]) => (
-          <Button
-            key={key}
-            variant={selectedTrack === key ? 'default' : 'outline'}
-            onClick={() => setSelectedTrack(key)}
-            className="flex-1 sm:flex-none"
-          >
-            {track?.title}
-          </Button>
-        ))}
-      </div>
-      {/* Track Description */}
-      <div className="p-4 bg-muted rounded-lg">
-        <h3 className="font-semibold text-authority-charcoal mb-1">
-          {certificationTracks?.[selectedTrack]?.title}
-        </h3>
-        <p className="text-professional-gray text-sm">
-          {certificationTracks?.[selectedTrack]?.description}
-        </p>
-      </div>
       {/* Certification Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredCertifications?.map((cert) => {
+        {certifications?.map((cert) => {
           const status = getCertificationStatus(cert);
-          const userCert = userProgress?.certifications?.find(uc => uc?.id === cert?.id);
+          const userCert = certifications?.find(uc => uc?.id === cert?.id);
           
           return (
             <div
               key={cert?.id}
               className={`p-6 rounded-lg border construction-shadow construction-transition ${
-                status === 'locked' ?'opacity-60 cursor-not-allowed' :'hover:construction-shadow-lg cursor-pointer'
+                status === 'locked'
+                  ? 'opacity-60 cursor-not-allowed'
+                  : 'hover:construction-shadow-lg cursor-pointer'
               } ${getStatusColor(status)}`}
             >
               {/* Certification Header */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
+                  {/* ✅ Status Icon */}
                   <div className={`p-2 rounded-lg ${getStatusColor(status)}`}>
                     <Icon name={getStatusIcon(status)} size={20} />
                   </div>
+                  {/* ✅ Title + Provider (and user avatar if you had it here) */}
                   <div>
-                    <h4 className="font-semibold text-authority-charcoal">{cert?.title}</h4>
+                    <h4 className="font-semibold text-authority-charcoal">
+                      {cert?.title}
+                    </h4>
                     <p className="text-sm text-professional-gray">{cert?.provider}</p>
+                    {/* If user avatar/image was here: */}
+                    {cert?.image && (
+                      <img
+                        src={cert.image}
+                        alt={cert?.title}
+                        className="w-8 h-8 rounded-full mt-2"
+                      />
+                    )}
                   </div>
                 </div>
                 {cert?.isPopular && (
@@ -107,12 +77,15 @@ const CertificationRoadmap = ({ certifications, userProgress }) => {
                   </span>
                 )}
               </div>
+
               {/* Progress Bar (for in-progress certifications) */}
               {status === 'in-progress' && userCert?.progress && (
                 <div className="mb-4">
                   <div className="flex justify-between text-sm mb-2">
                     <span className="text-professional-gray">Progress</span>
-                    <span className="font-medium text-authority-charcoal">{userCert?.progress}%</span>
+                    <span className="font-medium text-authority-charcoal">
+                      {userCert?.progress}%
+                    </span>
                   </div>
                   <div className="w-full bg-border rounded-full h-2">
                     <div 
@@ -122,6 +95,7 @@ const CertificationRoadmap = ({ certifications, userProgress }) => {
                   </div>
                 </div>
               )}
+
               {/* Certification Details */}
               <div className="space-y-3">
                 <p className="text-sm text-professional-gray">{cert?.description}</p>
@@ -147,11 +121,13 @@ const CertificationRoadmap = ({ certifications, userProgress }) => {
                 {/* Prerequisites */}
                 {cert?.prerequisites && cert?.prerequisites?.length > 0 && (
                   <div>
-                    <h5 className="text-xs font-medium text-authority-charcoal mb-2">Prerequisites:</h5>
+                    <h5 className="text-xs font-medium text-authority-charcoal mb-2">
+                      Prerequisites:
+                    </h5>
                     <div className="space-y-1">
                       {cert?.prerequisites?.map((prereqId) => {
                         const prereq = certifications?.find(c => c?.id === prereqId);
-                        const prereqCompleted = userProgress?.certifications?.some(
+                        const prereqCompleted = certifications?.some(
                           uc => uc?.id === prereqId && uc?.completed
                         );
                         

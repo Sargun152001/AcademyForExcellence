@@ -1021,12 +1021,10 @@ export const cancelBooking = async (bookingId, reason) => {
 // Fetch user bookings and merge with course data
 export const getUserBookings = async (filters = {}) => {
   try {
-    // 1️⃣ Build query string
+    
     const qs = toQueryString(filters);
     const url = `${BACKEND_URL}/api/Bookings${qs}`;
     console.log("📡 Full URL being called (bookings):", url);
-
-    // 2️⃣ Fetch bookings
     const res = await fetch(url, {
       headers: { Accept: "application/json" },
     });
@@ -1039,10 +1037,10 @@ export const getUserBookings = async (filters = {}) => {
     const data = await res.json();
     const bookings = data?.value || [];
 
-    // 3️⃣ Fetch courses once
+   
     const courses = await getCourses();
 
-    // 4️⃣ Map bookings → normalized format
+    
     return bookings.map((b) => {
       const course = courses.find((c) => c.id === b.courseId);
       const bookingDate = b.bookingDate ? new Date(b.bookingDate) : null;
@@ -1351,6 +1349,121 @@ export const getEnrollmentStats = async () => {
   }
 };
 
+export const getRecommendedCoursesForUsers = async (userId) => {
+  try {
+    const filterQuery = `$filter=resourceNo eq '${userId}'`;
+    const url = `${BACKEND_URL}/api/recommendedCourses?${filterQuery}`;
+    // console.log("📡 Full Recommended Courses URL being called:", url);
+ 
+    const res = await fetch(url, {
+      headers: { Accept: "application/json" },
+    });
+ 
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Backend error: ${res.status} ${text}`);
+    }
+ 
+    const data = await res.json();
+ 
+    const arr = data?.value || [];
+ 
+    console.log("Raw backend response for recommended courses:", data);
+ 
+    const recommendedCourses = arr.map((course) => {
+      const imageUrl = course?.image
+        ? `data:image/jpeg;base64,${course.image.replace(/\s/g, '')}`
+        : null;
+ 
+      // console.log("RECOM COURSE URLLLLLL: ", course?.image)
+ 
+      return {
+        id: course?.id,
+        title: course?.title || course?.Title,
+        instructor: course?.instructor,
+        duration: course?.duration,
+        level: course?.level,
+        rating: course?.rating,
+        category: course?.category,
+        image:imageUrl,
+        tags: Array.isArray(course?.tags)
+          ? course.tags
+          : (course?.tags
+            ? course.tags.split(",").map((t) => t.trim())
+            : []),
+        description: course?.description,
+        isNew: course?.isNew
+      };
+    });
+ 
+    console.log("✅ Parsed recommended courses:", recommendedCourses);
+    return recommendedCourses;
+ 
+  } catch (err) {
+    console.error("❌ Error in getRecommendedCoursesForUsers (frontend):", err);
+    throw err;
+  }
+};
+
+
+export const getSkillProgress = async (resourceId) => {
+  try {
+    const filterQuery = `$filter=resourceNo eq '${resourceId}'`;
+    const url = `${BACKEND_URL}/api/resSkillProgresss?${filterQuery}`;
+    // console.log("📡 Full Recommended Courses URL being called:", url);
+ 
+    const res = await fetch(url, {
+      headers: { Accept: "application/json" },
+    });
+ 
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Backend error for getSkillProgress: ${res.status} ${text}`);
+    }
+ 
+    const data = await res.json();
+ 
+    const arr = data?.value || [];
+ 
+    console.log("Raw backend response for skillProgress:", data);
+ 
+    return arr;
+ 
+  } catch (err) {
+    console.error("❌ Error in skillProgress (frontend):", err);
+    throw err;
+  }
+};
+
+export const getCertificates = async (resourceId) => {
+  try {
+    const filterQuery = `$filter=resourceNo eq '${resourceId}'`;
+    const url = `${BACKEND_URL}/api/resourceCertificatess?${filterQuery}`;
+    // console.log("📡 Full Recommended Courses URL being called:", url);
+ 
+    const res = await fetch(url, {
+      headers: { Accept: "application/json" },
+    });
+ 
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Backend error for getCertificates: ${res.status} ${text}`);
+    }
+ 
+    const data = await res.json();
+ 
+    const arr = data?.value || [];
+ 
+    console.log("Raw backend response for Certificates:", data);
+ 
+    return arr;
+ 
+  } catch (err) {
+    console.error("❌ Error in Certificates (frontend):", err);
+    throw err;
+  }
+};
+
 /**
  * Request course refund
  */
@@ -1388,7 +1501,10 @@ export default {
   // submitPeerEvaluation,
   // Course APIs
   getCourses,
+  getSkillProgress,
   getCourseById,
+  getCertificates,
+  getRecommendedCoursesForUsers,
   createCourse,
   updateCourse,
   deleteCourse,
