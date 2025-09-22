@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Header from '../../components/ui/Header';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
+import JobTargetsTree from "./components/RecentActivity"; 
 import ProgressOverview from './components/ProgressOverview';
 import SkillProgressCard from './components/SkillProgressCard';
 import LearningPathTimeline from './components/LearningPathTimeline';
@@ -26,9 +27,12 @@ const PersonalLearningPathProgress = () => {
   }, []);
 
   // Mock data for user progress
-  const userProfile  = JSON.parse(localStorage.getItem('userData') || '{}');
-  const resourceId = userProfile?.id
+const userProfile  = JSON.parse(localStorage.getItem('userData') || '{}');
 
+// **Add this line**
+console.log("userProfile from localStorage:", userProfile);
+
+const resourceId = userProfile?.id;
   const overviewData = {
     coursesCompleted: 18,
     totalCourses: 25,
@@ -576,17 +580,18 @@ useEffect(() => {
               </div>
             )}
 
-            {activeTab === 'activity' && (
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-authority-charcoal">Recent Activity</h2>
-                  <Button variant="outline" iconName="Filter">
-                    Filter Activity
-                  </Button>
-                </div>
-                <RecentActivity activities={recentActivities} />
-              </div>
-            )}
+       {activeTab === 'activity' && (
+  <div>
+    <div className="flex items-center justify-between mb-6">
+    </div>
+
+  {userProfile?.id ? (
+      <JobTargetsTree resourceCode={userProfile.id} />
+    ) : (
+      <div>Loading resource info...</div>
+    )}
+  </div>
+)}
           </div>
         </section>
 

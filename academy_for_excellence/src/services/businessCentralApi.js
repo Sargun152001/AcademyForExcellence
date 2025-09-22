@@ -1499,6 +1499,58 @@ export const getCertificatesForAll = async () => {
   }
 };
 
+export const getJobTargets = async (resourceCode) => {
+  try {
+    const url = `${BACKEND_URL}/api/JobTargets`;
+    console.log("📡 Fetching JobTargets:", url);
+
+    const res = await fetch(url, {
+      headers: { Accept: "application/json" },
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Backend error: ${res.status} ${text}`);
+    }
+
+    const data = await res.json();
+    console.log("Raw backend response for JobTargets:", data);
+
+    const arr = data?.value || [];
+
+    // Filter by resourceCode
+    const filtered = arr.filter((jt) => jt?.ResourceCode === resourceCode);
+
+    // Map all relevant fields as-is from backend
+    const jobTargets = filtered.map((jt) => ({
+      id: jt.JobTitleLineNo,
+      jobTitle: jt.JobTitle,
+      description: jt.Description || "",
+      jobTitleLineNo: jt.JobTitleLineNo,
+      jobTitleHeaderLineNo: jt.JobTitleHeaderLineNo,
+      type: jt.TitleType,           // Heading / Posting
+      projectNo: jt.ProjectNo || "",
+      resourceCode: jt.ResourceCode,
+      resourceName: jt.ResourceName,
+      resourceGroup: jt.ResourceGroup || "",
+      status: jt.Status || "",
+      period:jt.Period || "",
+      capacity: jt.Capacity || 0,
+      unitofMeasure: jt.UnitofMeasure || "",
+      completedAt: jt.CompletedAt || null,
+      odataEtag: jt["@odata.etag"] || "",
+      // You can add any other fields from backend here if needed
+    }));
+
+    console.log("✅ Parsed JobTargets:", jobTargets);
+    return jobTargets;
+  } catch (err) {
+    console.error("❌ Error in getJobTargets (frontend):", err);
+    throw err;
+  }
+};
+
+
 /**
  * Request course refund
  */
@@ -1548,6 +1600,7 @@ export default {
   // Schedule APIs
   getSchedules,
   getScheduleById,
+  getJobTargets,
   createSchedule,
   updateSchedule,
   cancelSchedule,
