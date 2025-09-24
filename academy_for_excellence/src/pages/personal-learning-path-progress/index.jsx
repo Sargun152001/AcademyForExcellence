@@ -10,6 +10,7 @@ import LearningPathTimeline from './components/LearningPathTimeline';
 import AchievementBadge from './components/AchievementBadge';
 import CertificationRoadmap from './components/CertificationRoadmap';
 import RecentActivity from './components/RecentActivity';
+import SubmittedDocuments from './components/SubmittedDocuments';
 import { getSkillProgress, getCertificates } from "../../services/businessCentralApi";
 
 const PersonalLearningPathProgress = () => {
@@ -476,7 +477,8 @@ useEffect(() => {
     { id: 'achievements', label: 'Achievements', icon: 'Award' },
     { id: 'certifications', label: 'Certifications', icon: 'Certificate' },
     { id: 'activity', label: 'KPIs', icon: 'Activity' },
-    { id: 'Submitted Documents', label: 'Submitted Documents', icon: 'Document' }
+   { id: 'submitted-documents', label: 'Submitted Documents', icon: 'Document' }
+
   ];
 
   return (
@@ -674,6 +676,14 @@ useEffect(() => {
     ) : (
       <div>Loading resource info...</div>
     )}
+  </div>
+)}
+{activeTab === 'submitted-documents' && (
+  <div>
+    <div className="flex items-center justify-between mb-6">
+      <h2 className="text-2xl font-bold text-authority-charcoal">Submitted Documents</h2>
+    </div>
+    <SubmittedDocuments />
   </div>
 )}
           </div>

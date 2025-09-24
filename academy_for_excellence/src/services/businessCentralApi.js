@@ -1552,6 +1552,42 @@ export const getJobTargets = async (resourceCode) => {
 
 
 /**
+ * Fetches all document subcategories and their parent categories.
+ * Returns an array of objects:
+ * { category, categoryName, subCategory, subCategoryName }
+ */
+export const getDocumentSubCategories = async () => {
+  try {
+    const response = await axios.get(`${BACKEND_URL}/api/documentSubCategories`);
+    return response.data?.value || []; // assuming OData-style "value" field
+  } catch (error) {
+    console.error('Error fetching document subcategories:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches submittal lines for a given category and subcategory.
+ * Accepts: { category: string, subCategory: string }
+ * Returns array of:
+ * { submittalNo, category, subCategory, description, documentLink, createdByGUID }
+ */
+export const getSubmittalLines = async ({ category, subCategory }) => {
+  try {
+    const response = await axios.get(`${BACKEND_URL}/api/submittalLines`, {
+      params: {
+        category,
+        subCategory
+      }
+    });
+    return response.data?.value || []; // again assuming OData-like
+  } catch (error) {
+    console.error('Error fetching submittal lines:', error);
+    throw error;
+  }
+};
+
+/**
  * Request course refund
  */
 export const requestRefund = async (enrollmentId, refundData) => {
@@ -1589,6 +1625,8 @@ export default {
   // Course APIs
   getCourses,
   getSkillProgress,
+  getSubmittalLines,
+  getDocumentSubCategories,
   getCourseById,
   getCertificates,
   getRecommendedCoursesForUsers,

@@ -102,6 +102,7 @@ const LoginPage = () => {
         title: resource.designation,
         email: resource.eMail,
         role: resource.designation,
+        guid:resource.userGUID,
         imageUrl: resource.image ? `data:image/jpeg;base64,${resource.image.replace(/\s/g, '')}` : null
       };
 
