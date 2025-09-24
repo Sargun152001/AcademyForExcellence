@@ -10,29 +10,112 @@ import LearningPathTimeline from './components/LearningPathTimeline';
 import AchievementBadge from './components/AchievementBadge';
 import CertificationRoadmap from './components/CertificationRoadmap';
 import RecentActivity from './components/RecentActivity';
-import { getSkillProgress , getCertificates} from "../../services/businessCentralApi";
-
+import { getSkillProgress, getCertificates } from "../../services/businessCentralApi";
 
 const PersonalLearningPathProgress = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [currentLanguage, setCurrentLanguage] = useState('en');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // start with true
   const [skillsProgress, setSkillsProgress] = useState([]);
   const [certifications, setCertifications] = useState([]); 
   const [error, setError] = useState(null);
+  const [learningPathData, setLearningPathData] = useState([]);
+  const [currentStageIndex, setCurrentStageIndex] = useState(0);
+const [currentStageTitle, setCurrentStageTitle] = useState('');
 
+  // Load saved language
   useEffect(() => {
     const savedLanguage = localStorage.getItem('selectedLanguage') || 'en';
     setCurrentLanguage(savedLanguage);
   }, []);
 
+  const userProfile = JSON.parse(localStorage.getItem('userData') || '{}');
+  const resourceId = userProfile?.id;
+
+  // Map skills to learning phases
+const mapSkillsToPhases = (skills) => {
+  const phaseMap = {
+    Foundation: "Foundation Phase",
+    Intermediate: "Intermediate Development",
+    Advance: "Advanced Specialization",
+    Expert: "Expert Mastery"
+  };
+
+  const grouped = {
+    "Foundation Phase": [],
+    "Intermediate Development": [],
+    "Advanced Specialization": [],
+    "Expert Mastery": []
+  };
+
+  skills.forEach((skill) => {
+    const phase = phaseMap[skill.level];
+    if (phase) {
+      grouped[phase].push({
+        id: skill.id,
+        name: skill.skill,
+        skillStatus: skill.skillStatus,
+        completed: skill.skillStatus === "Have",
+        progress: 100 // visually force 100%
+      });
+    }
+  });
+
+  const phases = Object.keys(grouped).map((phaseTitle, idx) => ({
+    id: idx + 1,
+    title: phaseTitle,
+    description: "",
+    duration: "",
+    modules: grouped[phaseTitle],
+    skills: grouped[phaseTitle].map((s) => s.name)
+  }));
+
+  // 🔥 Fixed: Use skillStatus to determine current stage
+  let currentIndex = phases.findIndex(phase =>
+    phase.modules.some(module => module.skillStatus === "Needed")
+  );
+
+  if (currentIndex === -1) {
+    currentIndex = phases.length; // means all completed
+  }
+
+  return {
+    phases,
+    currentIndex,
+    currentTitle: phases[currentIndex]?.title || "Completed"
+  };
+};
+
+
+  // Load skill progress
+useEffect(() => {
+  const loadSkills = async () => {
+    try {
+      setLoading(true);
+      const skills = await getSkillProgress(resourceId);
+      const { phases, currentIndex, currentTitle } = mapSkillsToPhases(skills);
+      setLearningPathData(phases);
+      setCurrentStageIndex(currentIndex);
+      setCurrentStageTitle(currentTitle);
+    } catch (err) {
+      console.error("Failed to load skills:", err);
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (resourceId) {
+    loadSkills();
+  }
+}, [resourceId]);
+
+
   // Mock data for user progress
-const userProfile  = JSON.parse(localStorage.getItem('userData') || '{}');
+
 
 // **Add this line**
-console.log("userProfile from localStorage:", userProfile);
 
-const resourceId = userProfile?.id;
   const overviewData = {
     coursesCompleted: 18,
     totalCourses: 25,
@@ -155,60 +238,60 @@ useEffect(() => {
 }, [resourceId]);
 
 
-  const learningPathData = [
-    {
-      id: 1,
-      title: "Foundation Phase",
-      description: "Essential project management principles and construction basics",
-      duration: "3 months",
-      modules: [
-        { id: 1, name: "PM Fundamentals", completed: true, progress: 100 },
-        { id: 2, name: "Construction Basics", completed: true, progress: 100 },
-        { id: 3, name: "Safety Protocols", completed: true, progress: 100 },
-        { id: 4, name: "Regional Overview", completed: true, progress: 100 }
-      ],
-      skills: ["Project Planning", "Safety Management", "Basic Scheduling"]
-    },
-    {
-      id: 2,
-      title: "Intermediate Development",
-      description: "Advanced project management techniques and regional specializations",
-      duration: "4 months",
-      modules: [
-        { id: 5, name: "Advanced Planning", completed: true, progress: 100 },
-        { id: 6, name: "Risk Management", completed: true, progress: 100 },
-        { id: 7, name: "Cultural Competency", completed: false, progress: 75 },
-        { id: 8, name: "Digital Tools Mastery", completed: false, progress: 60 }
-      ],
-      skills: ["Risk Assessment", "Cultural Intelligence", "Digital Proficiency"]
-    },
-    {
-      id: 3,
-      title: "Advanced Specialization",
-      description: "Leadership skills and complex project management scenarios",
-      duration: "5 months",
-      modules: [
-        { id: 9, name: "Leadership Excellence", completed: false, progress: 30 },
-        { id: 10, name: "Mega-Project Management", completed: false, progress: 0 },
-        { id: 11, name: "Stakeholder Relations", completed: false, progress: 0 },
-        { id: 12, name: "Innovation Integration", completed: false, progress: 0 }
-      ],
-      skills: ["Executive Leadership", "Strategic Planning", "Innovation Management"]
-    },
-    {
-      id: 4,
-      title: "Expert Mastery",
-      description: "Industry leadership and specialized regional expertise",
-      duration: "6 months",
-      modules: [
-        { id: 13, name: "Industry Leadership", completed: false, progress: 0 },
-        { id: 14, name: "Sustainable Practices", completed: false, progress: 0 },
-        { id: 15, name: "Mentorship Skills", completed: false, progress: 0 },
-        { id: 16, name: "Strategic Consulting", completed: false, progress: 0 }
-      ],
-      skills: ["Thought Leadership", "Sustainability", "Mentoring", "Consulting"]
-    }
-  ];
+  // const learningPathData = [
+  //   {
+  //     id: 1,
+  //     title: "Foundation Phase",
+  //     description: "Essential project management principles and construction basics",
+  //     duration: "3 months",
+  //     modules: [
+  //       { id: 1, name: "PM Fundamentals", completed: true, progress: 100 },
+  //       { id: 2, name: "Construction Basics", completed: true, progress: 100 },
+  //       { id: 3, name: "Safety Protocols", completed: true, progress: 100 },
+  //       { id: 4, name: "Regional Overview", completed: true, progress: 100 }
+  //     ],
+  //     skills: ["Project Planning", "Safety Management", "Basic Scheduling"]
+  //   },
+  //   {
+  //     id: 2,
+  //     title: "Intermediate Development",
+  //     description: "Advanced project management techniques and regional specializations",
+  //     duration: "4 months",
+  //     modules: [
+  //       { id: 5, name: "Advanced Planning", completed: true, progress: 100 },
+  //       { id: 6, name: "Risk Management", completed: true, progress: 100 },
+  //       { id: 7, name: "Cultural Competency", completed: false, progress: 75 },
+  //       { id: 8, name: "Digital Tools Mastery", completed: false, progress: 60 }
+  //     ],
+  //     skills: ["Risk Assessment", "Cultural Intelligence", "Digital Proficiency"]
+  //   },
+  //   {
+  //     id: 3,
+  //     title: "Advanced Specialization",
+  //     description: "Leadership skills and complex project management scenarios",
+  //     duration: "5 months",
+  //     modules: [
+  //       { id: 9, name: "Leadership Excellence", completed: false, progress: 30 },
+  //       { id: 10, name: "Mega-Project Management", completed: false, progress: 0 },
+  //       { id: 11, name: "Stakeholder Relations", completed: false, progress: 0 },
+  //       { id: 12, name: "Innovation Integration", completed: false, progress: 0 }
+  //     ],
+  //     skills: ["Executive Leadership", "Strategic Planning", "Innovation Management"]
+  //   },
+  //   {
+  //     id: 4,
+  //     title: "Expert Mastery",
+  //     description: "Industry leadership and specialized regional expertise",
+  //     duration: "6 months",
+  //     modules: [
+  //       { id: 13, name: "Industry Leadership", completed: false, progress: 0 },
+  //       { id: 14, name: "Sustainable Practices", completed: false, progress: 0 },
+  //       { id: 15, name: "Mentorship Skills", completed: false, progress: 0 },
+  //       { id: 16, name: "Strategic Consulting", completed: false, progress: 0 }
+  //     ],
+  //     skills: ["Thought Leadership", "Sustainability", "Mentoring", "Consulting"]
+  //   }
+  // ];
 
   const achievements = [
     {
@@ -392,7 +475,8 @@ useEffect(() => {
     { id: 'skills', label: 'Skills Progress', icon: 'TrendingUp' },
     { id: 'achievements', label: 'Achievements', icon: 'Award' },
     { id: 'certifications', label: 'Certifications', icon: 'Certificate' },
-    { id: 'activity', label: 'KPIs', icon: 'Activity' }
+    { id: 'activity', label: 'KPIs', icon: 'Activity' },
+    { id: 'Submitted Documents', label: 'Submitted Documents', icon: 'Document' }
   ];
 
   return (
@@ -517,17 +601,17 @@ useEffect(() => {
             {activeTab === 'learning-path' && (
               <div>
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-authority-charcoal">Your Learning Journey</h2>
-                  <div className="flex items-center space-x-4">
-                    <div className="text-sm text-professional-gray">
-                      Current Stage: <span className="font-medium text-authority-charcoal">Intermediate Development</span>
-                    </div>
-                    <Button variant="outline" iconName="Download">
-                      Export Progress
-                    </Button>
-                  </div>
+                 <div className="text-sm text-professional-gray">
+    Current Stage:{" "}
+    <span className="font-medium text-authority-charcoal">
+      {currentStageTitle || "N/A"}
+    </span>
+  </div>
                 </div>
-                <LearningPathTimeline pathData={learningPathData} currentStage={1} />
+                <LearningPathTimeline
+  pathData={learningPathData}
+  currentStage={currentStageIndex}
+/>
               </div>
             )}
 
