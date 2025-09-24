@@ -80,7 +80,7 @@ const LearningDashboardHomepage = () => {
             </div>
 
             {/* Role Switcher for Demo (Remove in production) */}
-            <div className="fixed bottom-4 right-4 bg-card p-4 rounded-lg construction-shadow border border-border">
+            {/* <div className="fixed bottom-4 right-4 bg-card p-4 rounded-lg construction-shadow border border-border">
               <div className="text-xs text-professional-gray mb-2">Demo: Switch Role</div>
               <div className="flex space-x-2">
                 {Object.keys(userData)?.map((role) => (
@@ -96,7 +96,7 @@ const LearningDashboardHomepage = () => {
                   </button>
                 ))}
               </div>
-            </div>
+            </div> */}
           </div>
         </main>
       </div>

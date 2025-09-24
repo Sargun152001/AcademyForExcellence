@@ -237,13 +237,14 @@ console.log('CourseData from fetchFeedbackCourses: ', coursesData);
     }
   }, [feedbackCourses?.length]);
 
-const submitFeedback = useCallback(async (bookingId, courseId, feedbackData) => {
+const submitFeedback = useCallback(async (bookingId, courseId, feedbackData, resourceEmail) => {
     try {
       console.log('Submit Feedback function: ', bookingId, courseId, feedbackData)
       // return;
-      const result = await businessCentralApi?.submitCourseFeedback(bookingId, courseId, feedbackData);
+      const result = await businessCentralApi?.submitCourseFeedback(bookingId, courseId, feedbackData, resourceEmail);
       // Refresh courses after successful submission
-      await fetchFeedbackCourses(false);
+      // await fetchFeedbackCourses(false);
+     
       return result;
     } catch (err) {
       console.error('Error submitting feedback:', err);

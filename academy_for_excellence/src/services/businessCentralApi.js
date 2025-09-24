@@ -187,11 +187,12 @@ export const getFeedbackCourses = async () => {
 /**
  * Submit course feedback
  */
-export const submitCourseFeedback = async (bookingId, courseId, feedbackData) => {
+export const submitCourseFeedback = async (bookingId, courseId, feedbackData, resourceEmail) => {
   try {
     const payload = {
       bookingId: bookingId,
       courseId: courseId,
+      resourceEmail: resourceEmail,
       additionalComments: feedbackData?.additionalComments,
       anonymous: feedbackData?.anonymous, //boolean
       communicationStyle: feedbackData?.communicationStyle,
@@ -203,7 +204,7 @@ export const submitCourseFeedback = async (bookingId, courseId, feedbackData) =>
       projectImpact: feedbackData?.projectImpact,
       recommendations: feedbackData?.recommendations,
       safetyImprovement: feedbackData?.safetyImprovement,
-      submittedBy: 'current-user', // This should be the actual user ID
+      submittedBy: resourceEmail, // This should be the actual user ID
       submittedDate: new Date()?.toISOString()
     };
     // return;
@@ -1551,6 +1552,153 @@ export const getJobTargets = async (resourceCode) => {
 };
 
 
+
+export const getCourseAssessments = async (courseId) => {
+  try {
+ 
+    const filterQuery = `$filter=courseId eq ${courseId}`;
+    const url = `${BACKEND_URL}/api/courseAssessments?${filterQuery}`;
+    console.log("📡 Full getCourseAssessments URL being called:", url);
+ 
+    const res = await fetch(url, {
+      headers: { Accept: "application/json" },
+    });
+ 
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Backend error for getCourseAssessments: ${res.status} ${text}`);
+    }
+ 
+    const data = await res.json();
+ 
+    const arr = data?.value || [];
+ 
+    console.log("Raw backend response for getCourseAssessments:", data);
+ 
+    // Map BC response to our expected format
+    const mappedQuestions = arr.map(item => ({
+      id: item.questionNo || item.id,
+      courseId: item.courseId,
+      courseTitle: item.courseTitle,
+      question: item.question,
+      questionNo: item.questionNo,
+      type: 'text' // Since all questions will have text answers
+    }));
+ 
+    return mappedQuestions;
+ 
+  } catch (err) {
+    console.error("❌ Error in getCourseAssessments (frontend):", err);
+    throw err;
+  }
+};
+ 
+ 
+export const getAssessmentsAndFeedbacks = async (resourceEmail) => {
+  try {
+ 
+    const filterQuery = `$filter=email eq '${resourceEmail}'`;
+    const url = `${BACKEND_URL}/api/assessmentFeedbacks?${filterQuery}`;
+    console.log("📡 Full getAssessmentsAndFeedbacks URL being called:", url);
+ 
+    const res = await fetch(url, {
+      headers: { Accept: "application/json" },
+    });
+ 
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Backend error for getAssessmentsAndFeedbacks: ${res.status} ${text}`);
+    }
+ 
+    const data = await res.json();
+ 
+    const arr = data?.value || [];
+ 
+    console.log("Raw backend response for getAssessmentsAndFeedbacks:", data);
+ 
+    const courses = await getCourses();
+ 
+    // 3️⃣ Map bookings → normalized format
+    return arr.map((item) => {
+      const course = courses.find((c) => c.id === item.courseId);
+      const bookingDate = item.bookingDate ? new Date(item.bookingDate) : null;
+ 
+      return {
+        id: item.systemId,
+        bookingId: item.bookingId,
+        email: item.email,
+        // scheduleId: item.scheduleID,
+        courseId: item.courseId,
+        courseName: item.courseTitle || course?.name,
+        date: item.preferredDate,
+        time: item.preferredTime,
+        assessmentStatus: item.assessmentStatus?.toLowerCase(),
+        feedbackSubmitted: item.feedbackSubmitted,
+        // location: course?.location || 'Online / TBD',
+        // format: item.attendeeType || course?.format,
+        // status: item.status?.toLowerCase(),
+        // specialRequirements: item.specialRequirements || "", // ✅ fixed
+        // notes: item.notes,
+        courseDescription: item.courseDescription,
+        courseDuration: item.courseDuration,
+        instructorName: {
+          name: item.instructorName
+        },
+ 
+        category: course?.category || null,
+        level: course?.level || null,
+        rating: course?.AverageRating || null,
+        totalRatings: course?.TotalRatings || null,
+        createdDate: course?.CreatedDate || null,
+        lastModified: course?.LastModified || null,
+        imageUrl: course?.imageUrl || null,
+        originalPrice: course?.OriginalPrice || null,
+      };
+    });
+ 
+  } catch (err) {
+    console.error("❌ Error in getAssessmentsAndFeedbacks (frontend):", err);
+    throw err;
+  }
+};
+ 
+export const submitAssessmentAnswers = async (submissionData) => {
+  try {
+    const payload = {
+      courseId: submissionData.courseId,
+      courseTitle: submissionData.courseTitle,
+      bookingId: submissionData.bookingId,
+      resourceId: submissionData.resourceId,
+      answers: submissionData.answers,
+      submittedAt: submissionData.submittedAt
+    };
+ 
+    console.log("📡 submitAssessmentAnswers Sent (camelCase):", payload);
+ 
+    const response = await fetch(`${BACKEND_URL}/api/courseAssessmentAnswers`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+ 
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("❌ Backend response:", text);
+      throw new Error(`Failed to submit Assessment Answers: ${response.status} ${text}`);
+    }
+ 
+    console.log('Response from submitAssessmentAnswers: ', response.json);
+ 
+    return response;
+  } catch (error) {
+    console.error('Error submitting Assessment Answers:', error);
+    throw error;
+  }
+};
+
 /**
  * Fetches all document subcategories and their parent categories.
  * Returns an array of objects:
@@ -1619,12 +1767,14 @@ export default {
   // Feedback APIs
   getFeedbackCourses,
   submitCourseFeedback,
+  submitAssessmentAnswers,
   // Peer Evaluation APIs
   // getPeerEvaluations,
   // submitPeerEvaluation,
   // Course APIs
   getCourses,
   getSkillProgress,
+  getAssessmentsAndFeedbacks,
   getSubmittalLines,
   getDocumentSubCategories,
   getCourseById,
@@ -1632,6 +1782,7 @@ export default {
   getRecommendedCoursesForUsers,
   createCourse,
   updateCourse,
+  getCourseAssessments,
   deleteCourse,
   getCourseCategories,
   getInstructors,

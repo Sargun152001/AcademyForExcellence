@@ -2,9 +2,9 @@ import React from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const AssessmentCard = ({ assessment, onStartAssessment, onViewResults }) => {
-  const getStatusColor = (status) => {
-    switch (status) {
+const AssessmentCard = ({ courseId, assessment, onStartAssessment, onViewResults }) => {
+  const getStatusColor = (assessmentStatus) => {
+    switch (assessmentStatus) {
       case 'completed':
         return 'text-success bg-success/10';
       case 'pending':
@@ -16,8 +16,8 @@ const AssessmentCard = ({ assessment, onStartAssessment, onViewResults }) => {
     }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
+  const getStatusIcon = (assessmentStatus) => {
+    switch (assessmentStatus) {
       case 'completed':
         return 'CheckCircle';
       case 'pending':
@@ -37,30 +37,36 @@ const AssessmentCard = ({ assessment, onStartAssessment, onViewResults }) => {
             {assessment?.courseName}
           </h3>
           <p className="text-sm text-professional-gray mb-3">
-            {assessment?.description}
+            {assessment?.courseDescription}
           </p>
           <div className="flex items-center space-x-4 text-sm text-professional-gray">
             <div className="flex items-center space-x-1">
               <Icon name="Calendar" size={16} />
-              <span>Due: {assessment?.dueDate}</span>
+              <span>Due: {assessment?.date}</span>
             </div>
             <div className="flex items-center space-x-1">
               <Icon name="Clock" size={16} />
-              <span>{assessment?.duration} mins</span>
+              {/* <span>{assessment?.courseDuration}</span> */}
             </div>
+            {assessment?.instructorName?.name && (
+              <div className="flex items-center space-x-1">
+                <Icon name="User" size={16} />
+                <span>Instructor: {assessment?.instructorName?.name}</span>
+              </div>
+            )}
           </div>
         </div>
-        <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(assessment?.status)}`}>
-          <Icon name={getStatusIcon(assessment?.status)} size={16} />
-          <span className="capitalize">{assessment?.status}</span>
+        <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(assessment?.assessmentStatus)}`}>
+          <Icon name={getStatusIcon(assessment?.assessmentStatus)} size={16} />
+          <span className="capitalize">{assessment?.assessmentStatus}</span>
         </div>
       </div>
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <div className="text-sm">
+          {/* <div className="text-sm">
             <span className="text-professional-gray">Type: </span>
             <span className="font-medium text-authority-charcoal">{assessment?.type}</span>
-          </div>
+          </div> */}
           {assessment?.score && (
             <div className="text-sm">
               <span className="text-professional-gray">Score: </span>
@@ -68,9 +74,9 @@ const AssessmentCard = ({ assessment, onStartAssessment, onViewResults }) => {
             </div>
           )}
         </div>
-        
+
         <div className="flex items-center space-x-2">
-          {assessment?.status === 'completed' ? (
+          {assessment?.assessmentStatus === 'completed' ? (
             <Button
               variant="outline"
               onClick={() => onViewResults?.(assessment)}
@@ -80,11 +86,11 @@ const AssessmentCard = ({ assessment, onStartAssessment, onViewResults }) => {
             >
               View Results
             </Button>
-          ) : assessment?.status === 'overdue' ? (
+          ) : assessment?.assessmentStatus === 'overdue' ? (
             <div className="flex items-center space-x-2">
               <Button
                 variant="danger"
-                onClick={() => onStartAssessment?.(assessment)}
+                onClick={() => onStartAssessment?.(assessment, courseId)}
                 iconName="AlertCircle"
                 iconPosition="left"
                 size="sm"
@@ -95,10 +101,10 @@ const AssessmentCard = ({ assessment, onStartAssessment, onViewResults }) => {
           ) : (
             <Button
               variant="default"
-              onClick={() => onStartAssessment?.(assessment)}
+              onClick={() => onStartAssessment?.(assessment, courseId)}
               iconName="Play"
               iconPosition="left"
-              disabled={!assessment || assessment?.status === 'completed'}
+              disabled={!assessment || assessment?.assessmentStatus === 'completed'}
             >
               Start Assessment
             </Button>

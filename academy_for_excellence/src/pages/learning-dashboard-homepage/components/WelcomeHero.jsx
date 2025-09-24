@@ -102,7 +102,7 @@ const WelcomeHero = ({ userRole, userName, userTitle }) => {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8 pt-6 border-t border-white/20">
+        {/* <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8 pt-6 border-t border-white/20">
           <div className="text-center">
             <div className="text-2xl font-bold text-accent">12</div>
             <div className="text-sm text-white/80">Courses Completed</div>
@@ -119,7 +119,7 @@ const WelcomeHero = ({ userRole, userName, userTitle }) => {
             <div className="text-2xl font-bold text-accent">24h</div>
             <div className="text-sm text-white/80">Learning Time</div>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

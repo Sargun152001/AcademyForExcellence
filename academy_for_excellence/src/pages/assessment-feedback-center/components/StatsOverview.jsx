@@ -5,24 +5,24 @@ const StatsOverview = ({ stats, pendingFeedbackCount = 0 }) => {
   const statCards = [
     {
       title: 'Completed Assessments',
-      value: stats?.completedAssessments || 0,
+      value: stats?.completedAssessments || 1,
       icon: 'CheckCircle',
       color: 'text-success',
       bgColor: 'bg-success/10',
       change: '+12%',
       changeType: 'positive'
     },
+    // {
+    //   title: 'Pending Evaluations',
+    //   value: stats?.pendingEvaluations || 0,
+    //   icon: 'Clock',
+    //   color: 'text-warning',
+    //   bgColor: 'bg-warning/10',
+    //   change: '-5%',
+    //   changeType: 'negative'
+    // },
     {
-      title: 'Pending Evaluations',
-      value: stats?.pendingEvaluations || 0,
-      icon: 'Clock',
-      color: 'text-warning',
-      bgColor: 'bg-warning/10',
-      change: '-5%',
-      changeType: 'negative'
-    },
-    {
-      title: 'Pending Course Feedback',
+      title: 'Pending Feedback',
       value: pendingFeedbackCount, // Use the prop instead of stats?.averageScore
       icon: 'TrendingUp',
       color: 'text-primary',
@@ -31,6 +31,7 @@ const StatsOverview = ({ stats, pendingFeedbackCount = 0 }) => {
       changeType: 'positive'
     }
   ];
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       {statCards?.map((stat, index) => (

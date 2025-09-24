@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../../components/ui/Header';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
@@ -8,8 +8,10 @@ import FeedbackForm from './components/FeedbackForm';
 import PeerEvaluationCard from './components/PeerEvaluationCard';
 import ResultsModal from './components/ResultsModal';
 import StatsOverview from './components/StatsOverview';
-import ConnectionStatus from '../../components/ConnectionStatus';
+// import ConnectionStatus from '../../components/ConnectionStatus';
 import { useBusinessCentral, useAssessments, useFeedback, usePeerEvaluations } from '../../hooks/useBusinessCentral';
+import AssessmentForm from './components/AssessmentForm';
+import { getAssessmentsAndFeedbacks, submitAssessmentAnswers } from 'services/businessCentralApi';
 
 const AssessmentFeedbackCenter = () => {
   const [activeTab, setActiveTab] = useState('assessments');
@@ -27,8 +29,18 @@ const AssessmentFeedbackCenter = () => {
   const [offlineData, setOfflineData] = useState([]);
   const [showSubmissionForm, setShowSubmissionForm] = useState(false);
 
+
+  const [showAssessmentForm, setShowAssessmentForm] = useState(false);
+  const [selectedAssessmentForForm, setSelectedAssessmentForForm] = useState(null);
+
+
+  // NEW: Add state for API data
+  const [assessmentFeedbackData, setAssessmentFeedbackData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   // Business Central integration hooks
-  const { isConnected, connectionStatus } = useBusinessCentral();
+  // const { isConnected, connectionStatus } = useBusinessCentral();
   const {
     assessments,
     stats,
@@ -49,6 +61,94 @@ const AssessmentFeedbackCenter = () => {
     error: peerError,
     submitEvaluation
   } = usePeerEvaluations();
+
+
+  // NEW: Function to get resource email from localStorage
+  const getResourceEmail = () => {
+    try {
+      // Try userResource first
+      const userResource = localStorage.getItem('userResource');
+      if (userResource) {
+        const resource = JSON.parse(userResource);
+        if (resource.email) {
+          return resource.email;
+        }
+      }
+
+      // Try userData as fallback
+      const userData = localStorage.getItem('userData');
+      if (userData) {
+        const user = JSON.parse(userData);
+        if (user.email) {
+          return user.email;
+        }
+      }
+
+      console.warn('[DEBUG] No email found in localStorage');
+      return null;
+    } catch (err) {
+      console.error('[DEBUG] Error getting email from localStorage:', err);
+      return null;
+    }
+  };
+
+
+  // Add this function alongside getResourceEmail
+  const getResourceId = () => {
+    try {
+      // Try userResource first
+      const userResource = localStorage.getItem('userResource');
+      if (userResource) {
+        const resource = JSON.parse(userResource);
+        if (resource.id) {
+          return resource.id;
+        }
+      }
+
+      // Try userData as fallback
+      const userData = localStorage.getItem('userData');
+      if (userData) {
+        const user = JSON.parse(userData);
+        if (user.id) {
+          return user.id;
+        }
+      }
+
+      console.warn('[DEBUG] No resource ID found in localStorage');
+      return null;
+    } catch (err) {
+      console.error('[DEBUG] Error getting resource ID from localStorage:', err);
+      return null;
+    }
+  };
+
+
+  // NEW: Fetch assessment and feedback data on component mount
+  useEffect(() => {
+    const fetchAssessmentFeedbackData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const resourceEmail = getResourceEmail();
+        if (!resourceEmail) {
+          setAssessmentFeedbackData([]);
+          return;
+        }
+
+        const data = await getAssessmentsAndFeedbacks(resourceEmail);
+
+        setAssessmentFeedbackData(data || []);
+      } catch (err) {
+        setError('Failed to load assessment and feedback data');
+        setAssessmentFeedbackData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAssessmentFeedbackData();
+  }, []); // Empty dependency array - fetch once on mount
 
   const tabs = [
     { id: 'assessments', label: 'My Assessments', icon: 'ClipboardCheck' },
@@ -79,7 +179,7 @@ const AssessmentFeedbackCenter = () => {
 
       const reportData = {
         generatedAt: new Date()?.toISOString(),
-        connectionStatus: isConnected ? 'connected' : 'disconnected',
+        // connectionStatus: isConnected ? 'connected' : 'disconnected',
         dataSource: 'Microsoft Dynamics 365 Business Central',
         summary: {
           totalAssessments: assessments?.length || 0,
@@ -134,6 +234,23 @@ const AssessmentFeedbackCenter = () => {
     setShowRequestForm(true);
   };
 
+
+  const handleSubmitAssessment = async (submissionData) => {
+    try {
+      console.log('[DEBUG] Assessment submission:', submissionData);
+      // return;
+
+      await submitAssessmentAnswers(submissionData);
+
+      alert('Assessment submitted successfully!');
+      setShowAssessmentForm(false);
+      setSelectedAssessmentForForm(null);
+    } catch (error) {
+      console.error('Error submitting assessment:', error);
+      throw error; // Let AssessmentForm handle the error display
+    }
+  };
+
   const handleSubmitAssessmentRequest = async (requestData) => {
     try {
       await submitAssessmentRequest(requestData);
@@ -146,22 +263,34 @@ const AssessmentFeedbackCenter = () => {
   };
 
   // Enhanced Start Assessment functionality
-  const handleStartAssessment = async (assessment) => {
+  const handleStartAssessment = async (assessment, courseId) => {
     if (!assessment) return;
 
-    if (!isConnected) {
-      alert('Cannot start assessment: Not connected to Business Central. Please check your connection and try again.');
-      return;
-    }
+    // if (!isConnected) {
+    //   alert('Cannot start assessment: Not connected to Business Central. Please check your connection and try again.');
+    //   return;
+    // }
 
     setAssessmentStarted(assessment?.id);
 
-    const confirmed = window.confirm(`Are you sure you want to start the "${assessment?.courseName}" assessment?\n\nDuration: ${assessment?.duration} minutes\nType: ${assessment?.type}\n\nThis will be recorded in Business Central.`);
+    // const confirmed = window.confirm(`Are you sure you want to start the "${assessment?.courseName}" assessment?\n\nDuration: ${assessment?.duration} \nType: ${assessment?.type}\n\nThis will be recorded in Business Central.`);
+
+    const confirmed = window.confirm(`Are you sure you want to start the "${assessment?.courseName}" assessment?`);
 
     if (confirmed) {
       try {
-        await startAssessment(assessment?.id);
-        alert(`Assessment "${assessment?.courseName}" started successfully!\n\nThe assessment session has been logged in Business Central.\nReminder: You have ${assessment?.duration} minutes to complete this assessment.`);
+        // await startAssessment(courseId);
+        // alert(`Assessment "${assessment?.courseName}" started successfully!\n\nThe assessment session has been logged in Business Central.\nReminder: You have ${assessment?.duration} minutes to complete this assessment.`);
+
+        const resourceId = getResourceId();
+
+        setSelectedAssessmentForForm({
+          ...assessment,
+          courseId: courseId || assessment?.courseId,
+          resourceId: resourceId
+        });
+        setShowAssessmentForm(true);
+
       } catch (error) {
         console.error('Error starting assessment:', error);
         alert(`Failed to start assessment: ${error?.message}`);
@@ -173,7 +302,7 @@ const AssessmentFeedbackCenter = () => {
 
   // Enhanced View Results functionality
   const handleViewResults = (assessment) => {
-    if (!assessment || assessment?.status !== 'completed') {
+    if (!assessment || assessment?.assessmentStatus !== 'completed') {
       alert('Results are only available for completed assessments.');
       return;
     }
@@ -189,12 +318,29 @@ const AssessmentFeedbackCenter = () => {
       // }
 
       // console.log("Data to be send: ", selectedCourse?.bookingId, selectedCourse?.courseId, feedbackData);
-      
-      console.log("Feedback data: ", feedbackData)
-      const result = await submitFeedback(selectedCourse?.bookingId, selectedCourse?.courseId, feedbackData);
+
+      // console.log("Feedback data: ", feedbackData)
+
+      // Validate required fields
+      // if (!selectedCourse?.bookingId) {
+      //   alert('Error: Booking ID is missing. Cannot submit feedback.');
+      //   return;
+      // }
+
+      const resourceEmail = getResourceEmail();
+
+      const result = await submitFeedback(selectedCourse?.bookingId, selectedCourse?.courseId, feedbackData, resourceEmail);
 
       console.log("result after submitFeedback: ", result)
-      
+
+      setAssessmentFeedbackData(prevData =>
+        prevData.map(course =>
+          course.bookingId === selectedCourse?.bookingId
+            ? { ...course, feedbackSubmitted: true }
+            : course
+        )
+      );
+
       // await submitFeedback(selectedCourse?.id, feedbackData);
       alert('Feedback submitted successfully to Business Central!');
       setShowFeedbackForm(false);
@@ -212,9 +358,9 @@ const AssessmentFeedbackCenter = () => {
 
   const handleSubmitPeerEvaluation = async (evaluationData) => {
     try {
-      if (!isConnected) {
-        throw new Error('Not connected to Business Central');
-      }
+      // if (!isConnected) {
+      //   throw new Error('Not connected to Business Central');
+      // }
 
       await submitEvaluation(evaluationData?.evaluationId, evaluationData);
       alert('Peer evaluation submitted successfully to Business Central!');
@@ -224,26 +370,53 @@ const AssessmentFeedbackCenter = () => {
     }
   };
 
-  const filteredAssessments = assessments?.filter(assessment => {
-    const statusMatch = filterStatus === 'all' || assessment?.status === filterStatus;
-    const typeMatch = filterType === 'all' || assessment?.type === filterType;
-    return statusMatch && typeMatch;
-  }) || [];
+  // const filteredAssessments = assessments?.filter(assessment => {
+  //   const statusMatch = filterStatus === 'all' || assessment?.status === filterStatus;
+  //   const typeMatch = filterType === 'all' || assessment?.type === filterType;
+  //   return statusMatch && typeMatch;
+  // }) || [];
 
   // console.log('Scheduled Bookings: ', feedbackCourses)
 
-  const pendingFeedbackCourses = feedbackCourses?.filter(course => {
-    const courseDateTime = new Date(`${course?.date}T${course?.time}`);
-    const currentDateTime = new Date();
+  const pendingFeedbackCourses = assessmentFeedbackData?.filter(course => {
+    if (!course.feedbackSubmitted) {
+      const courseDate = new Date(course?.date);
+      const today = new Date();
+      courseDate.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
 
-    return courseDateTime.getTime() < currentDateTime.getTime();
+      return courseDate.getTime() < today.getTime();
+    }
+    return false;
   }) || [];
-  console.log('Scheduled Bookings afterFilter: ', pendingFeedbackCourses)
+  console.log('Pending Feedback afterFilter: ', pendingFeedbackCourses)
+
+  const myAssessmentCourses = assessmentFeedbackData?.filter(course => {
+    const courseDate = new Date(course.date);
+    const today = new Date();
+    courseDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+
+    return courseDate.getTime() < today.getTime();
+  }) || [];
+  console.log('myAssessmentCourses afterFilter: ', myAssessmentCourses);
+
+  const completedAssessmentCount = assessmentFeedbackData?.filter(course => {
+    if (course.assessmentStatus === 'completed') {
+      const courseDate = new Date(course.date);
+      const today = new Date();
+      courseDate.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+      return courseDate.getTime() < today.getTime();
+    }
+    return false;
+  }).length || 0;
+
 
 
   // Loading states
-  const isLoading = assessmentsLoading || feedbackLoading || peerLoading;
-  const hasErrors = assessmentsError || feedbackError || peerError;
+  const isLoading = loading || assessmentsLoading || feedbackLoading || peerLoading;
+  const hasErrors = error || assessmentsError || feedbackError || peerError;
 
   return (
     <div className="min-h-screen bg-background">
@@ -258,23 +431,23 @@ const AssessmentFeedbackCenter = () => {
                   <h1 className="text-3xl font-bold text-authority-charcoal">
                     Assessment & Feedback Center
                   </h1>
-                  <ConnectionStatus
+                  {/* <ConnectionStatus
                     isConnected={isConnected}
                     connectionStatus={connectionStatus}
-                  />
+                  /> */}
                 </div>
                 <p className="text-professional-gray">
                   Multi-dimensional evaluation system integrated with Microsoft Dynamics 365 Business Central for comprehensive learning assessment and cultural feedback integration
                 </p>
-                {!isConnected && (
+                {/* {!isConnected && (
                   <div className="mt-2 text-amber-600 text-sm flex items-center space-x-1">
                     <Icon name="AlertTriangle" size={16} />
                     <span>Operating in offline mode - data may not be current</span>
                   </div>
-                )}
+                )} */}
               </div>
 
-              <div className="flex items-center space-x-3">
+              {/* <div className="flex items-center space-x-3">
                 <Button
                   variant="outline"
                   iconName="Download"
@@ -290,31 +463,35 @@ const AssessmentFeedbackCenter = () => {
                   iconName="Plus"
                   iconPosition="left"
                   onClick={handleRequestAssessment}
-                  disabled={!isConnected}
+                  // disabled={!isConnected}
                 >
                   Request Assessment
                 </Button>
-              </div>
+              </div> */}
             </div>
           </div>
 
           {/* Error Display */}
-          {hasErrors && (
+          {/* {hasErrors && (
             <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
               <div className="flex items-center space-x-2 text-red-800">
                 <Icon name="AlertCircle" size={20} />
                 <h3 className="font-medium">Data Loading Issues</h3>
               </div>
               <div className="mt-2 text-sm text-red-700 space-y-1">
+                {error && <div>• Assessment/Feedback Data: {error}</div>}
                 {assessmentsError && <div>• Assessments: {assessmentsError}</div>}
                 {feedbackError && <div>• Feedback: {feedbackError}</div>}
-                {/* {peerError && <div>• Peer Evaluations: {peerError}</div>} */}
+                {peerError && <div>• Peer Evaluations: {peerError}</div>}
               </div>
               <div className="mt-3 text-sm text-red-600">
                 Some data may be incomplete. Please check your connection to Business Central.
               </div>
             </div>
-          )}
+          )} */}
+
+
+
 
           {/* Loading State */}
           {isLoading && (
@@ -327,7 +504,7 @@ const AssessmentFeedbackCenter = () => {
           )}
 
           {/* Stats Overview */}
-          <StatsOverview stats={stats} loading={assessmentsLoading} pendingFeedbackCount={pendingFeedbackCourses?.length || 0} />
+          <StatsOverview stats={stats} loading={assessmentsLoading} pendingFeedbackCount={pendingFeedbackCourses?.length || 0} completedAssessmentCount={completedAssessmentCount} />
 
           {/* Navigation Tabs */}
           <div className="bg-white rounded-lg border border-border construction-shadow mb-8">
@@ -363,31 +540,32 @@ const AssessmentFeedbackCenter = () => {
                         placeholder="Filter by status"
                         className="w-48"
                       />
-                      <Select
+                      {/* <Select
                         options={typeOptions}
                         value={filterType}
                         onChange={setFilterType}
                         placeholder="Filter by type"
                         className="w-48"
-                      />
+                      /> */}
                     </div>
 
                     <div className="text-sm text-professional-gray">
-                      Showing {filteredAssessments?.length} of {assessments?.length || 0} assessments
-                      {isConnected && <span className="text-green-600"> (Live data)</span>}
+                      Showing {myAssessmentCourses?.length} of {myAssessmentCourses?.length || 0} assessments
+                      {/* {isConnected && <span className="text-green-600"> (Live data)</span>} */}
                     </div>
                   </div>
 
                   {/* Assessment Cards */}
-                  {filteredAssessments?.length > 0 ? (
+                  {myAssessmentCourses?.length > 0 ? (
                     <div className="space-y-4">
-                      {filteredAssessments?.map((assessment) => (
+                      {myAssessmentCourses?.map((assessment) => (
                         <AssessmentCard
                           key={assessment?.id}
+                          courseId={assessment?.courseId}
                           assessment={assessment}
                           onStartAssessment={handleStartAssessment}
                           onViewResults={handleViewResults}
-                          // disabled={!isConnected}
+                        // disabled={!isConnected}
                         />
                       ))}
                     </div>
@@ -415,7 +593,7 @@ const AssessmentFeedbackCenter = () => {
                         </h3>
                         <p className="text-professional-gray">
                           Provide feedback for completed courses to help improve training quality and cultural relevance.
-                          {isConnected && <span className="text-green-600"> Data synced with Business Central.</span>}
+                          {/* {isConnected && <span className="text-green-600"> Data synced with Business Central.</span>} */}
                         </p>
                       </div>
 
@@ -434,7 +612,7 @@ const AssessmentFeedbackCenter = () => {
                                   </div>
                                   <div className="flex items-center space-x-2">
                                     <Icon name="User" size={16} />
-                                    <span>Instructor: {course?.instructor?.name}</span>
+                                    <span>Instructor: {course?.instructorName?.name}</span>
                                   </div>
                                 </div>
                               </div>
@@ -471,7 +649,7 @@ const AssessmentFeedbackCenter = () => {
                         setShowFeedbackForm(false);
                         setSelectedCourse(null);
                       }}
-                      isConnected={isConnected}
+                    // isConnected={isConnected}
                     />
                   )}
                 </div>
@@ -534,14 +712,14 @@ const AssessmentFeedbackCenter = () => {
               </button>
             </div>
 
-            {!isConnected && (
+            {/* {!isConnected && (
               <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
                 <div className="flex items-center space-x-2 text-amber-700">
                   <Icon name="AlertTriangle" size={16} />
                   <span className="text-sm">Connection to Business Central required</span>
                 </div>
               </div>
-            )}
+            )} */}
 
             <form
               onSubmit={(e) => {
@@ -565,7 +743,7 @@ const AssessmentFeedbackCenter = () => {
                   type="text"
                   name="courseName"
                   required
-                  disabled={!isConnected}
+                  // disabled={!isConnected}
                   className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100 disabled:cursor-not-allowed"
                   placeholder="Enter course or topic name"
                 />
@@ -578,7 +756,7 @@ const AssessmentFeedbackCenter = () => {
                 <select
                   name="assessmentType"
                   required
-                  disabled={!isConnected}
+                  // disabled={!isConnected}
                   className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   <option value="">Select assessment type</option>
@@ -596,7 +774,7 @@ const AssessmentFeedbackCenter = () => {
                 <input
                   type="date"
                   name="preferredDate"
-                  disabled={!isConnected}
+                  // disabled={!isConnected}
                   className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
               </div>
@@ -608,7 +786,7 @@ const AssessmentFeedbackCenter = () => {
                 <textarea
                   name="additionalNotes"
                   rows="3"
-                  disabled={!isConnected}
+                  // disabled={!isConnected}
                   className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100 disabled:cursor-not-allowed"
                   placeholder="Any specific requirements or notes"
                 />
@@ -619,7 +797,7 @@ const AssessmentFeedbackCenter = () => {
                   type="submit"
                   variant="default"
                   fullWidth
-                  disabled={!isConnected}
+                // disabled={!isConnected}
                 >
                   Submit to Business Central
                 </Button>
@@ -644,6 +822,18 @@ const AssessmentFeedbackCenter = () => {
           onClose={() => {
             setShowResultsModal(false);
             setSelectedAssessment(null);
+          }}
+        />
+      )}
+
+      {/* Assessment Form Modal - ADD THIS HERE */}
+      {showAssessmentForm && selectedAssessmentForForm && (
+        <AssessmentForm
+          assessment={selectedAssessmentForForm}
+          onSubmit={handleSubmitAssessment}
+          onCancel={() => {
+            setShowAssessmentForm(false);
+            setSelectedAssessmentForForm(null);
           }}
         />
       )}
