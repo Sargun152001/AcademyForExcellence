@@ -226,7 +226,7 @@ export const submitCourseFeedback = async (bookingId, courseId, feedbackData, re
       throw new Error(`Failed to create booking: ${response.status} ${text}`);
     }
  
-    console.log('Response from submitCourseFeedback: ', response);
+    // console.log('Response from submitCourseFeedback: ', response);
  
     return response;
   } catch (error) {
@@ -1690,7 +1690,7 @@ export const submitAssessmentAnswers = async (submissionData) => {
       throw new Error(`Failed to submit Assessment Answers: ${response.status} ${text}`);
     }
  
-    console.log('Response from submitAssessmentAnswers: ', response.json);
+    // console.log('Response from submitAssessmentAnswers: ', response.json);
  
     return response;
   } catch (error) {

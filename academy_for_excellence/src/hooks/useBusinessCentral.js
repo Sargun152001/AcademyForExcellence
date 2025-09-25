@@ -16,9 +16,9 @@ export const useBusinessCentral = () => {
       if (!isRetry) {
         setConnectionStatus('checking');
       }
-      
+
       const result = await businessCentralApi?.testConnection();
-      
+
       if (result?.success) {
         setIsConnected(true);
         setConnectionStatus('connected');
@@ -28,7 +28,7 @@ export const useBusinessCentral = () => {
         setIsConnected(false);
         setConnectionStatus('error');
         setConnectionDetails(result);
-        
+
         // Auto-retry for network issues (max 3 attempts)
         if (retryAttempt < 3 && result?.message?.includes('Network')) {
           setTimeout(() => {
@@ -116,13 +116,13 @@ export const useAssessments = () => {
         setLoading(true);
       }
       setError(null);
-      
+
       console.log('Fetching assessments and stats...');
       const [assessmentsData, statsData] = await Promise.all([
         businessCentralApi?.getAssessments(),
         businessCentralApi?.getAssessmentStats()
       ]);
-      
+
       setAssessments(assessmentsData || []);
       setStats(statsData || {
         completedAssessments: 0,
@@ -135,7 +135,7 @@ export const useAssessments = () => {
     } catch (err) {
       console.error('Error fetching assessments:', err);
       setError(err?.message || 'Failed to fetch assessments');
-      
+
       // Don't clear existing data on error - keep showing cached data
       // Only clear if it's the first load
       if (assessments?.length === 0) {
@@ -179,7 +179,7 @@ export const useAssessments = () => {
   // Auto-refresh assessments periodically (every 5 minutes)
   useEffect(() => {
     fetchAssessments();
-    
+
     const refreshInterval = setInterval(() => {
       if (document.visibilityState === 'visible') {
         fetchAssessments(false); // Silent refresh
@@ -216,18 +216,18 @@ export const useFeedback = () => {
         setLoading(true);
       }
       setError(null);
-      
+
       console.log('Fetching feedback courses...');
-      
+
       const coursesData = await businessCentralApi?.getUserBookings();
-console.log('CourseData from fetchFeedbackCourses: ', coursesData);
+      console.log('CourseData from fetchFeedbackCourses: ', coursesData);
       setFeedbackCourses(coursesData || []);
       setLastFetchTime(new Date());
       console.log('Successfully fetched feedback courses');
     } catch (err) {
       console.error('Error fetching feedback courses:', err);
       setError(err?.message || 'Failed to fetch feedback courses');
-      
+
       // Keep existing data on error
       if (feedbackCourses?.length === 0) {
         setFeedbackCourses([]);
@@ -237,21 +237,21 @@ console.log('CourseData from fetchFeedbackCourses: ', coursesData);
     }
   }, [feedbackCourses?.length]);
 
-const submitFeedback = useCallback(async (bookingId, courseId, feedbackData, resourceEmail) => {
+  const submitFeedback = useCallback(async (bookingId, courseId, feedbackData, resourceEmail) => {
     try {
-      console.log('Submit Feedback function: ', bookingId, courseId, feedbackData)
+      // console.log('Submit Feedback function: ', bookingId, courseId, feedbackData)
       // return;
       const result = await businessCentralApi?.submitCourseFeedback(bookingId, courseId, feedbackData, resourceEmail);
       // Refresh courses after successful submission
       // await fetchFeedbackCourses(false);
-     
+
       return result;
     } catch (err) {
       console.error('Error submitting feedback:', err);
       throw new Error(err?.message || 'Failed to submit feedback');
     }
   }, [fetchFeedbackCourses]);
- 
+
 
   useEffect(() => {
     fetchFeedbackCourses();
@@ -282,7 +282,7 @@ export const usePeerEvaluations = () => {
         setLoading(true);
       }
       setError(null);
-      
+
       console.log('Fetching peer evaluations...');
       const evaluationsData = await businessCentralApi?.getPeerEvaluations();
       setPeerEvaluations(evaluationsData || []);
@@ -291,7 +291,7 @@ export const usePeerEvaluations = () => {
     } catch (err) {
       console.error('Error fetching peer evaluations:', err);
       setError(err?.message || 'Failed to fetch peer evaluations');
-      
+
       // Keep existing data on error
       if (peerEvaluations?.length === 0) {
         setPeerEvaluations([]);

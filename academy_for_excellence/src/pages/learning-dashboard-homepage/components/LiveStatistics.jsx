@@ -3,6 +3,11 @@ import Icon from '../../../components/AppIcon';
 import { getCertificatesForAll, getAssessmentsAndFeedbacks } from 'services/businessCentralApi';
 import Button from 'components/ui/Button';
 
+import AssessmentForm from 'pages/assessment-feedback-center/components/AssessmentForm';
+import FeedbackForm from 'pages/assessment-feedback-center/components/FeedbackForm';
+import { useFeedback } from 'hooks/useBusinessCentral';
+import { submitAssessmentAnswers } from 'services/businessCentralApi';
+
 const LiveStatistics = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [certificatesData, setCertificatesData] = useState([]);
@@ -12,6 +17,17 @@ const LiveStatistics = () => {
   // ADD THIS NEW LINE:
   const [assessmentFeedbackData, setAssessmentFeedbackData] = useState([]);
 
+  // ADD THESE NEW STATE VARIABLES:
+  const [showAssessmentForm, setShowAssessmentForm] = useState(false);
+  const [selectedAssessmentForForm, setSelectedAssessmentForForm] = useState(null);
+  const [showFeedbackFormModal, setShowFeedbackFormModal] = useState(false);
+  const [selectedCourseForModal, setSelectedCourseForModal] = useState(null);
+
+
+  // ADD THIS HOOK:
+  const { submitFeedback } = useFeedback();
+
+
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -19,6 +35,7 @@ const LiveStatistics = () => {
 
     return () => clearInterval(timer);
   }, []);
+
 
   const getResourceEmail = () => {
     try {
@@ -43,6 +60,32 @@ const LiveStatistics = () => {
     }
   };
 
+  // ADD THESE HELPER FUNCTIONS:
+  const getResourceId = () => {
+    try {
+      const userResource = localStorage.getItem('userResource');
+      if (userResource) {
+        const resource = JSON.parse(userResource);
+        if (resource.id) {
+          return resource.id;
+        }
+      }
+      const userData = localStorage.getItem('userData');
+      if (userData) {
+        const user = JSON.parse(userData);
+        if (user.id) {
+          return user.id;
+        }
+      }
+      console.warn('[DEBUG] No resource ID found in localStorage');
+      return null;
+    } catch (err) {
+      console.error('[DEBUG] Error getting resource ID from localStorage:', err);
+      return null;
+    }
+  };
+
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -59,6 +102,8 @@ const LiveStatistics = () => {
         const resourceEmail = getResourceEmail();
         if (resourceEmail) {
           const assessmentFeedback = await getAssessmentsAndFeedbacks(resourceEmail);
+          console.log('assessmenttFeedbackdataa in Live Statistics: ', assessmentFeedback);
+          
           setAssessmentFeedbackData(assessmentFeedback || []);
         }
       } catch (err) {
@@ -114,7 +159,9 @@ const LiveStatistics = () => {
         dueDate: formatUpcomingDate(course.date),
         priority: 'high',
         course: course.courseName,
-        itemType: 'assessment'
+        itemType: 'assessment',
+        courseId: course.courseId,  // ADD THIS LINE
+        bookingId: course.bookingId  // ADD THIS LINE (useful for feedback)
       }));
 
     const pendingFeedback = assessmentFeedbackData
@@ -134,7 +181,9 @@ const LiveStatistics = () => {
         dueDate: formatUpcomingDate(course.date),
         priority: 'medium',
         course: course.courseName,
-        itemType: 'feedback'
+        itemType: 'feedback',
+        courseId: course.courseId,  // ADD THIS LINE
+        bookingId: course.bookingId  // ADD THIS LINE
       }));
 
     // Combine and return all pending items
@@ -160,44 +209,44 @@ const LiveStatistics = () => {
       }));
   };
 
-  const organizationStats = [
-    {
-      title: "Active Learners",
-      value: "1,247",
-      change: "+12%",
-      trend: "up",
-      icon: "Users",
-      color: "text-success",
-      bgColor: "bg-success/10"
-    },
-    {
-      title: "Courses Completed",
-      value: "3,456",
-      change: "+8%",
-      trend: "up",
-      icon: "BookOpen",
-      color: "text-primary",
-      bgColor: "bg-primary/10"
-    },
-    {
-      title: "Certifications Earned",
-      value: "892",
-      change: "+15%",
-      trend: "up",
-      icon: "Award",
-      color: "text-accent",
-      bgColor: "bg-accent/10"
-    },
-    {
-      title: "Average Score",
-      value: "87.5%",
-      change: "+2.3%",
-      trend: "up",
-      icon: "TrendingUp",
-      color: "text-confidence-teal",
-      bgColor: "bg-confidence-teal/10"
-    }
-  ];
+  // const organizationStats = [
+  //   {
+  //     title: "Active Learners",
+  //     value: "1,247",
+  //     change: "+12%",
+  //     trend: "up",
+  //     icon: "Users",
+  //     color: "text-success",
+  //     bgColor: "bg-success/10"
+  //   },
+  //   {
+  //     title: "Courses Completed",
+  //     value: "3,456",
+  //     change: "+8%",
+  //     trend: "up",
+  //     icon: "BookOpen",
+  //     color: "text-primary",
+  //     bgColor: "bg-primary/10"
+  //   },
+  //   {
+  //     title: "Certifications Earned",
+  //     value: "892",
+  //     change: "+15%",
+  //     trend: "up",
+  //     icon: "Award",
+  //     color: "text-accent",
+  //     bgColor: "bg-accent/10"
+  //   },
+  //   {
+  //     title: "Average Score",
+  //     value: "87.5%",
+  //     change: "+2.3%",
+  //     trend: "up",
+  //     icon: "TrendingUp",
+  //     color: "text-confidence-teal",
+  //     bgColor: "bg-confidence-teal/10"
+  //   }
+  // ];
 
   // REPLACE THIS ENTIRE SECTION:
   const upcomingDeadlines = (assessmentFeedbackData.length > 0 && !loading)
@@ -278,17 +327,111 @@ const LiveStatistics = () => {
     }
   };
 
-  // REPLACE the existing handlePendingClick function with these:
+  // REPLACE the existing handleAssessmentClick and handleFeedbackClick functions:
   const handleAssessmentClick = (deadline) => {
-    console.log('Start Assessment clicked for:', deadline.title);
-    // Add your assessment logic here
-    // You can navigate to assessment page or open assessment modal
+    // console.log('Start Assessment clicked for:', deadline.title);
+
+    // Find the full assessment data using courseId (more reliable than title)
+    const assessmentData = assessmentFeedbackData.find(course =>
+      course.courseId === deadline.courseId && course.assessmentStatus === 'pending'
+    );
+
+    if (!assessmentData) {
+      alert('Assessment data not found. Please try again.');
+      return;
+    }
+
+    const confirmed = window.confirm(`Are you sure you want to start the "${deadline.title}" assessment?`);
+
+    if (confirmed) {
+      const resourceId = getResourceId();
+
+      setSelectedAssessmentForForm({
+        ...assessmentData,
+        // courseId: deadline.courseId || assessmentData.courseId,
+        resourceId: resourceId
+      });
+      setShowAssessmentForm(true);
+    }
   };
 
   const handleFeedbackClick = (deadline) => {
-    console.log('Complete Feedback clicked for:', deadline.title);
-    // Add your feedback logic here
-    // You can navigate to feedback page or open feedback modal
+    // console.log('Complete Feedback clicked for:', deadline.title);
+
+    // Find the full course data using courseId or bookingId (more reliable than title)
+    const courseData = assessmentFeedbackData.find(course =>
+      course.courseId === deadline.courseId && !course.feedbackSubmitted
+    );
+
+    if (!courseData) {
+      alert('Course data not found. Please try again.');
+      return;
+    }
+
+    setSelectedCourseForModal(courseData);
+    setShowFeedbackFormModal(true);
+  };
+
+
+  // ADD THESE NEW HANDLER FUNCTIONS:
+  const handleSubmitAssessment = async (submissionData) => {
+    try {
+      console.log('Handle Submit Assessmetn function data', submissionData);
+      await submitAssessmentAnswers(submissionData);
+
+      // Update local state to reflect completion
+      setAssessmentFeedbackData(prevData =>
+        prevData.map(course =>
+          // console.log('CHECk:   ','courseID: ', course.id, ' selectedAssessmentForForm: ', selectedAssessmentForForm?.id),
+          course.id === selectedAssessmentForForm?.id
+            ? { ...course, assessmentStatus: 'completed' }
+            : course
+        )
+      );
+
+      alert('Assessment submitted successfully!');
+      setShowAssessmentForm(false);
+      setSelectedAssessmentForForm(null);
+    } catch (error) {
+      console.error('Error submitting assessment:', error);
+      throw error;
+    }
+  };
+
+  const handleSubmitFeedback = async (feedbackData) => {
+    try {
+      // console.log("Feedback data: ", feedbackData);
+      // console.log("Selected Course: ", selectedCourseForModal);
+
+      const resourceEmail = getResourceEmail();
+      if (!resourceEmail) {
+        alert('Error: User email not found. Cannot submit feedback.');
+        return;
+      }
+
+      const result = await submitFeedback(
+        selectedCourseForModal?.bookingId,
+        selectedCourseForModal?.courseId,
+        feedbackData,
+        resourceEmail
+      );
+
+      // Update local state to reflect feedback submission
+      setAssessmentFeedbackData(prevData =>
+        prevData.map(course =>
+          course.bookingId === selectedCourseForModal?.bookingId
+            ? { ...course, feedbackSubmitted: true }
+            : course
+        )
+      );
+
+      alert('Feedback submitted successfully to Business Central!');
+      setShowFeedbackFormModal(false);
+      setSelectedCourseForModal(null);
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      alert(`Failed to submit feedback: ${error?.message}`);
+    }
   };
 
 
@@ -581,6 +724,55 @@ const LiveStatistics = () => {
           ))}
         </div> */}
       </div>
+      {/* Assessment Form Modal */}
+      {showAssessmentForm && selectedAssessmentForForm && (
+        <AssessmentForm
+          assessment={selectedAssessmentForForm}
+          onSubmit={handleSubmitAssessment}
+          onCancel={() => {
+            setShowAssessmentForm(false);
+            setSelectedAssessmentForForm(null);
+          }}
+        />
+      )}
+
+      {/* Feedback Form Modal */}
+      {showFeedbackFormModal && selectedCourseForModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b">
+              <div>
+                <h3 className="text-lg font-semibold text-authority-charcoal">
+                  Course Feedback & Evaluation
+                </h3>
+                <p className="text-sm text-professional-gray mt-1">
+                  {selectedCourseForModal?.courseName}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowFeedbackFormModal(false);
+                  setSelectedCourseForModal(null);
+                }}
+                className="text-professional-gray hover:text-authority-charcoal"
+              >
+                <Icon name="X" size={20} />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+              <FeedbackForm
+                course={selectedCourseForModal}
+                onSubmit={handleSubmitFeedback}
+                onCancel={() => {
+                  setShowFeedbackFormModal(false);
+                  setSelectedCourseForModal(null);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

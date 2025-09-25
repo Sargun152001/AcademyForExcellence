@@ -16,8 +16,8 @@ import { getAssessmentsAndFeedbacks, submitAssessmentAnswers } from 'services/bu
 const AssessmentFeedbackCenter = () => {
   const [activeTab, setActiveTab] = useState('assessments');
   const [selectedAssessment, setSelectedAssessment] = useState(null);
-  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState(null);
+  // const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  // const [selectedCourse, setSelectedCourse] = useState(null);
   const [showResultsModal, setShowResultsModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
@@ -32,6 +32,9 @@ const AssessmentFeedbackCenter = () => {
 
   const [showAssessmentForm, setShowAssessmentForm] = useState(false);
   const [selectedAssessmentForForm, setSelectedAssessmentForForm] = useState(null);
+
+  const [showFeedbackFormModal, setShowFeedbackFormModal] = useState(false);
+  const [selectedCourseForModal, setSelectedCourseForModal] = useState(null);
 
 
   // NEW: Add state for API data
@@ -317,25 +320,18 @@ const AssessmentFeedbackCenter = () => {
       //   throw new Error('Not connected to Business Central');
       // }
 
-      // console.log("Data to be send: ", selectedCourse?.bookingId, selectedCourse?.courseId, feedbackData);
-
-      // console.log("Feedback data: ", feedbackData)
-
-      // Validate required fields
-      // if (!selectedCourse?.bookingId) {
-      //   alert('Error: Booking ID is missing. Cannot submit feedback.');
-      //   return;
-      // }
+      console.log("Feedback data: ", feedbackData);
+      console.log("Selected Course: ", selectedCourseForModal);
 
       const resourceEmail = getResourceEmail();
 
-      const result = await submitFeedback(selectedCourse?.bookingId, selectedCourse?.courseId, feedbackData, resourceEmail);
+      const result = await submitFeedback(selectedCourseForModal?.bookingId, selectedCourseForModal?.courseId, feedbackData, resourceEmail);
 
-      console.log("result after submitFeedback: ", result)
+      // console.log("result after submitFeedback: ", result)
 
       setAssessmentFeedbackData(prevData =>
         prevData.map(course =>
-          course.bookingId === selectedCourse?.bookingId
+          course.bookingId === selectedCourseForModal?.bookingId
             ? { ...course, feedbackSubmitted: true }
             : course
         )
@@ -343,8 +339,8 @@ const AssessmentFeedbackCenter = () => {
 
       // await submitFeedback(selectedCourse?.id, feedbackData);
       alert('Feedback submitted successfully to Business Central!');
-      setShowFeedbackForm(false);
-      setSelectedCourse(null);
+      setShowFeedbackFormModal(false);
+      setSelectedCourseForModal(null);
     } catch (error) {
       console.error('Error submitting feedback:', error);
       alert(`Failed to submit feedback: ${error?.message}`);
@@ -352,8 +348,8 @@ const AssessmentFeedbackCenter = () => {
   };
 
   const handleCourseSelection = (course) => {
-    setSelectedCourse(course);
-    setShowFeedbackForm(true);
+    setSelectedCourseForModal(course);
+    setShowFeedbackFormModal(true);
   };
 
   const handleSubmitPeerEvaluation = async (evaluationData) => {
@@ -585,72 +581,57 @@ const AssessmentFeedbackCenter = () => {
               {/* Feedback Tab */}
               {activeTab === 'feedback' && (
                 <div>
-                  {!showFeedbackForm ? (
-                    <div>
-                      <div className="mb-6">
-                        <h3 className="text-lg font-semibold text-authority-charcoal mb-2">
-                          Pending Course Feedback
-                        </h3>
-                        <p className="text-professional-gray">
-                          Provide feedback for completed courses to help improve training quality and cultural relevance.
-                          {/* {isConnected && <span className="text-green-600"> Data synced with Business Central.</span>} */}
-                        </p>
-                      </div>
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-authority-charcoal mb-2">
+                      Pending Course Feedback
+                    </h3>
+                    <p className="text-professional-gray">
+                      Provide feedback for completed courses to help improve training quality and cultural relevance.
+                    </p>
+                  </div>
 
-                      {pendingFeedbackCourses?.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          {pendingFeedbackCourses?.map((course) => (
-                            <div key={course?.id} className="bg-white rounded-lg border border-border p-6 construction-shadow hover:construction-shadow-lg construction-transition">
-                              <div className="mb-4">
-                                <h4 className="font-semibold text-authority-charcoal mb-2">
-                                  {course?.courseName}
-                                </h4>
-                                <div className="text-sm text-professional-gray space-y-1">
-                                  <div className="flex items-center space-x-2">
-                                    <Icon name="Calendar" size={16} />
-                                    <span>Completed: {course?.date}</span>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <Icon name="User" size={16} />
-                                    <span>Instructor: {course?.instructorName?.name}</span>
-                                  </div>
-                                </div>
+                  {pendingFeedbackCourses?.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {pendingFeedbackCourses?.map((course) => (
+                        <div key={course?.id} className="bg-white rounded-lg border border-border p-6 construction-shadow hover:construction-shadow-lg construction-transition">
+                          <div className="mb-4">
+                            <h4 className="font-semibold text-authority-charcoal mb-2">
+                              {course?.courseName}
+                            </h4>
+                            <div className="text-sm text-professional-gray space-y-1">
+                              <div className="flex items-center space-x-2">
+                                <Icon name="Calendar" size={16} />
+                                <span>Completed: {course?.date}</span>
                               </div>
-
-                              <Button
-                                variant="default"
-                                fullWidth
-                                onClick={() => handleCourseSelection(course)}
-                                iconName="MessageSquare"
-                                iconPosition="left"
-                                disabled={!isOnlineMode}
-                              >
-                                {!isOnlineMode && course?.type !== 'self_assessment' ? 'Offline Mode' : 'Provide Feedback'}
-                              </Button>
+                              <div className="flex items-center space-x-2">
+                                <Icon name="User" size={16} />
+                                <span>Instructor: {course?.instructorName?.name}</span>
+                              </div>
                             </div>
-                          ))}
+                          </div>
+
+                          <Button
+                            variant="default"
+                            fullWidth
+                            onClick={() => handleCourseSelection(course)}
+                            iconName="MessageSquare"
+                            iconPosition="left"
+                          // disabled={!isOnlineMode}
+                          >
+                            Provide Feedback
+                          </Button>
                         </div>
-                      ) : (
-                        <div className="text-center py-8 text-professional-gray">
-                          <Icon name="MessageSquare" size={48} className="mx-auto mb-4 text-border" />
-                          <h3 className="text-lg font-medium mb-2">No Pending Feedback</h3>
-                          <p className="text-sm">
-                            {feedbackLoading
-                              ? 'Loading feedback courses from Business Central...' : 'All course feedback has been completed or none are available.'}
-                          </p>
-                        </div>
-                      )}
+                      ))}
                     </div>
                   ) : (
-                    <FeedbackForm
-                      course={selectedCourse}
-                      onSubmit={handleSubmitFeedback}
-                      onCancel={() => {
-                        setShowFeedbackForm(false);
-                        setSelectedCourse(null);
-                      }}
-                    // isConnected={isConnected}
-                    />
+                    <div className="text-center py-8 text-professional-gray">
+                      <Icon name="MessageSquare" size={48} className="mx-auto mb-4 text-border" />
+                      <h3 className="text-lg font-medium mb-2">No Pending Feedback</h3>
+                      <p className="text-sm">
+                        {feedbackLoading
+                          ? 'Loading feedback courses from Business Central...' : 'All course feedback has been completed or none are available.'}
+                      </p>
+                    </div>
                   )}
                 </div>
               )}
@@ -697,7 +678,7 @@ const AssessmentFeedbackCenter = () => {
       </div>
 
       {/* Request Assessment Form Modal */}
-      {showRequestForm && (
+      {/* {showRequestForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
             <div className="flex items-center justify-between mb-6">
@@ -712,14 +693,14 @@ const AssessmentFeedbackCenter = () => {
               </button>
             </div>
 
-            {/* {!isConnected && (
+            {!isConnected && (
               <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
                 <div className="flex items-center space-x-2 text-amber-700">
                   <Icon name="AlertTriangle" size={16} />
                   <span className="text-sm">Connection to Business Central required</span>
                 </div>
               </div>
-            )} */}
+            )}
 
             <form
               onSubmit={(e) => {
@@ -813,7 +794,7 @@ const AssessmentFeedbackCenter = () => {
             </form>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Results Modal */}
       {showResultsModal && (
@@ -836,6 +817,44 @@ const AssessmentFeedbackCenter = () => {
             setSelectedAssessmentForForm(null);
           }}
         />
+      )}
+
+      {/* Feedback Form Modal - ADD THIS */}
+      {showFeedbackFormModal && selectedCourseForModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b">
+              <div>
+                <h3 className="text-lg font-semibold text-authority-charcoal">
+                  Course Feedback & Evaluation
+                </h3>
+                <p className="text-sm text-professional-gray mt-1">
+                  {selectedCourseForModal?.courseName}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowFeedbackFormModal(false);
+                  setSelectedCourseForModal(null);
+                }}
+                className="text-professional-gray hover:text-authority-charcoal"
+              >
+                <Icon name="X" size={20} />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+              <FeedbackForm
+                course={selectedCourseForModal}
+                onSubmit={handleSubmitFeedback}
+                onCancel={() => {
+                  setShowFeedbackFormModal(false);
+                  setSelectedCourseForModal(null);
+                }}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -78,6 +78,7 @@ const AssessmentForm = ({ assessment, onSubmit, onCancel }) => {
 
         setIsSubmitting(true);
         try {
+            console.log('assessmentCourseId from assessmentForm.jsx: ',assessment?.courseId)
             const submissionData = {
                 // assessmentId: assessment?.id,
                 courseId: assessment?.courseId,

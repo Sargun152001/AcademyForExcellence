@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
-
 import Select from '../../../components/ui/Select';
 
 const FeedbackForm = ({ course, onSubmit, onCancel }) => {
@@ -26,14 +25,14 @@ const FeedbackForm = ({ course, onSubmit, onCancel }) => {
     { value: '2 - Fair (2/5)', label: 'Fair (2/5)' },
     { value: '1 - Poor (1/5)', label: 'Poor (1/5)' }
   ];
- 
+
   const impactOptions = [
     { value: 'High Impact - Immediately applicable', label: 'High Impact - Immediately applicable' },
     { value: 'Medium Impact - Applicable with adaptation', label: 'Medium Impact - Applicable with adaptation' },
     { value: 'Low Impact - Limited applicability', label: 'Low Impact - Limited applicability' },
     { value: 'No Impact - Not relevant to current projects', label: 'No Impact - Not relevant to current projects' }
   ];
- 
+
   const communicationOptions = [
     { value: 'Direct Western-style feedback', label: 'Direct Western-style feedback' },
     { value: 'Relationship-focused approach', label: 'Relationship-focused approach' },
@@ -53,18 +52,10 @@ const FeedbackForm = ({ course, onSubmit, onCancel }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-border p-6 construction-shadow">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h3 className="text-xl font-semibold text-authority-charcoal mb-2">
-            Course Feedback & Evaluation
-          </h3>
-          <p className="text-sm text-professional-gray">
-            {course?.name} - Completed on {course?.completionDate}
-          </p>
-        </div>
-        <Button variant="ghost" onClick={onCancel} iconName="X" />
-      </div>
+    // REMOVED: outer container styling since it's now inside a modal
+    <div className="p-6">
+      {/* REMOVED: Header section since it's now in the modal header */}
+
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Overall Rating Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -76,7 +67,7 @@ const FeedbackForm = ({ course, onSubmit, onCancel }) => {
             onChange={(value) => handleInputChange('overallRating', value)}
             required
           />
-          
+
           <Select
             label="Instructor Rating"
             description="Rate the instructor's effectiveness"
@@ -97,7 +88,7 @@ const FeedbackForm = ({ course, onSubmit, onCancel }) => {
             onChange={(value) => handleInputChange('contentQuality', value)}
             required
           />
-          
+
           <Select
             label="Practical Applicability"
             description="How applicable is this training to your work?"
@@ -114,7 +105,7 @@ const FeedbackForm = ({ course, onSubmit, onCancel }) => {
             <Icon name="Target" size={20} className="mr-2 text-accent" />
             Impact Assessment
           </h4>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Select
               label="Safety Improvement"
@@ -124,7 +115,7 @@ const FeedbackForm = ({ course, onSubmit, onCancel }) => {
               onChange={(value) => handleInputChange('safetyImprovement', value)}
               required
             />
-            
+
             <Select
               label="Project Impact"
               description="Expected impact on project performance"
@@ -142,7 +133,7 @@ const FeedbackForm = ({ course, onSubmit, onCancel }) => {
             <Icon name="Globe" size={20} className="mr-2 text-confidence-teal" />
             Cultural Considerations
           </h4>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Select
               label="Cultural Sensitivity"
@@ -152,7 +143,7 @@ const FeedbackForm = ({ course, onSubmit, onCancel }) => {
               onChange={(value) => handleInputChange('culturalSensitivity', value)}
               required
             />
-            
+
             <Select
               label="Communication Style Preference"
               description="Which feedback approach do you prefer?"
@@ -178,7 +169,7 @@ const FeedbackForm = ({ course, onSubmit, onCancel }) => {
               onChange={(e) => handleInputChange('recommendations', e?.target?.value)}
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-authority-charcoal mb-2">
               Additional Comments
