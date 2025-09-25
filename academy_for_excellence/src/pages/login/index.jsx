@@ -151,57 +151,43 @@ const LoginPage = () => {
 
   // Handle Azure AD login
   const handleAzureLogin = async (useRedirect = false, role) => {
-    debugButtonClick(`Azure Login ${useRedirect ? 'Redirect' : 'Popup'}`);
-    try {
-      setIsLoading(true);
-      setError(null);
+  debugButtonClick(`Azure Login ${useRedirect ? 'Redirect' : 'Popup'}`);
+  try {
+    setIsLoading(true);
+    setError(null);
 
-      if (!loginPopup && !loginRedirect) {
-        throw new Error('No login functions available from auth context.');
-      }
-
-      let loginResult;
-      if (useRedirect && loginRedirect) {
-        await loginRedirect();
-        return; // redirect reloads the page
-      } else if (loginPopup) {
-        loginResult = await loginPopup();
-        console.log('[DEBUG] Login popup result:', loginResult);
-      }
-
-      // BC lookup before navigating
-      // await getUserResourceByEmail(userData.email);
-
-      // Demo user injection (for now)
-      // const demoUsers = {
-      //   manager: {
-      //     id: 'demo-mgr-1',
-      //     name: 'Dheeraj Dubey',
-      //     email: 'admin@trojanpi.onmicrosoft.com',
-      //     title: 'Construction Director',
-      //     role: 'manager',
-      //   },
-      // };
-      // const userData = demoUsers[role];
-      // if (!userData) throw new Error(`Invalid role: ${role}`);
-
-      localStorage.setItem('isAuthenticated', 'true');
-      // localStorage.setItem('userData', JSON.stringify(userData));
-      localStorage.setItem('authType', 'demo');
-
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // BC lookup before navigating
-      await getUserResourceByEmail(userData.email);
-
-      navigate('/learning-dashboard-homepage', { replace: true });
-    } catch (err) {
-      console.error('[DEBUG] Azure login error:', err);
-      setError(err.message || 'Login failed. Please try again.');
-    } finally {
-      setIsLoading(false);
+    if (!loginPopup && !loginRedirect) {
+      throw new Error('No login functions available from auth context.');
     }
-  };
+
+    let loginResult;
+    if (useRedirect && loginRedirect) {
+      await loginRedirect();
+      return; // redirect reloads the page
+    } else if (loginPopup) {
+      loginResult = await loginPopup();
+      console.log('[DEBUG] Login popup result:', loginResult);
+    }
+
+    localStorage.setItem('isAuthenticated', 'true');
+    localStorage.setItem('authType', 'demo');
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // ✅ FIX: use Azure AD user, not undefined userData
+    const email = user?.username || user?.email 
+    if (email) {
+      await getUserResourceByEmail(email);
+    }
+
+    navigate('/learning-dashboard-homepage', { replace: true });
+  } catch (err) {
+    console.error('[DEBUG] Azure login error:', err);
+    setError(err.message || 'Login failed. Please try again.');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   // Handle demo login
   const handleDemoLogin = async (role) => {
@@ -267,12 +253,12 @@ const LoginPage = () => {
       <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="bg-white rounded-2xl shadow-2xl p-8 relative z-10">
-            {/* Debug Info */}
+            {/* Debug Info
             {debugInfo && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
                 <p className="text-green-700 text-sm">Debug: {debugInfo}</p>
               </div>
-            )}
+            )} */}
 
             {/* Logo and Title */}
             <div className="text-center mb-8">

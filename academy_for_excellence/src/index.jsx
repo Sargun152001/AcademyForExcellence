@@ -2,6 +2,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import { HashRouter as Router } from "react-router-dom";
 import "./styles/tailwind.css";
 import "./styles/index.css";
 
@@ -10,7 +11,11 @@ function renderReactApp() {
   const container = document.getElementById("root");
   const root = createRoot(container);
 
-  root.render(<App />);
+  root.render(
+    <Router>
+      <App />
+    </Router>
+  );
 }
 
 renderReactApp();
