@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { getDocumentSubCategories, getSubmittalLines } from "../../../services/businessCentralApi";
 
-// Get user GUID from localStorage
 const userProfile = JSON.parse(localStorage.getItem('userData') || '{}');
 const userGuid = userProfile.guid;
 
 const SubmittedDocuments = () => {
   const [categories, setCategories] = useState([]);
-  const [subCategories, setSubCategories] = useState([]);
+  const [allSubCategories, setAllSubCategories] = useState([]); // 👈 full list
+  const [subCategories, setSubCategories] = useState([]);       // 👈 filtered list
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSubCategory, setSelectedSubCategory] = useState('');
   const [results, setResults] = useState([]);
@@ -34,7 +34,7 @@ const SubmittedDocuments = () => {
 
         const uniqueCategories = Array.from(catMap.values());
         setCategories(uniqueCategories);
-        setSubCategories(data);
+        setAllSubCategories(data); // store full list once
       } catch (err) {
         console.error('Error loading documentSubCategories', err);
         setError(err);
@@ -54,13 +54,10 @@ const SubmittedDocuments = () => {
       return;
     }
 
-    const filtered = categories.length > 0
-      ? subCategories.filter((sc) => sc.category === selectedCategory)
-      : [];
-
+    const filtered = allSubCategories.filter((sc) => sc.category === selectedCategory);
     setSubCategories(filtered);
     setSelectedSubCategory('');
-  }, [selectedCategory]);
+  }, [selectedCategory, allSubCategories]);
 
   // Fetch submittal lines
   useEffect(() => {
@@ -119,13 +116,11 @@ const SubmittedDocuments = () => {
             disabled={!selectedCategory}
           >
             <option value="">-- Select Subcategory --</option>
-            {subCategories
-              .filter((sc) => sc.category === selectedCategory)
-              .map((sc) => (
-                <option key={sc.subCategory} value={sc.subCategory}>
-                  {sc.subCategoryName || sc.subCategory}
-                </option>
-              ))}
+            {subCategories.map((sc) => (
+              <option key={sc.subCategory} value={sc.subCategory}>
+                {sc.subCategoryName || sc.subCategory}
+              </option>
+            ))}
           </select>
         </div>
       </div>
@@ -137,46 +132,46 @@ const SubmittedDocuments = () => {
         ) : error ? (
           <p className="text-red-500">Error: {error.message || 'Something went wrong'}</p>
         ) : (
-        <table className="min-w-full border border-gray-300 rounded-lg overflow-hidden">
-  <thead>
-    <tr className="bg-gradient-to-r from-primary to-secondary text-white">
-      <th className="text-left px-4 py-3 border-r">Submittal No.</th>
-      <th className="text-left px-4 py-3 border-r">Description</th>
-      <th className="text-center px-4 py-3">Document Link</th>
-    </tr>
-  </thead>
-  <tbody>
-    {results.length === 0 ? (
-      <tr>
-        <td colSpan={3} className="text-center py-4 text-gray-500">
-          No records found
-        </td>
-      </tr>
-    ) : (
-      results.map((item, idx) => (
-        <tr
-          key={idx}
-          className={`border-t border-b border-gray-300 ${
-            idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-          } hover:bg-gray-100 transition duration-150`}
-        >
-          <td className="px-4 py-3 border-r">{item.submittalNo}</td>
-          <td className="px-4 py-3 border-r">{item.description}</td>
-          <td className="px-4 py-3 text-center">
-            <a
-              href={item.documentLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline"
-            >
-              View
-            </a>
-          </td>
-        </tr>
-      ))
-    )}
-  </tbody>
-</table>
+          <table className="min-w-full border border-gray-300 rounded-lg overflow-hidden">
+            <thead>
+              <tr className="bg-gradient-to-r from-primary to-secondary text-white">
+                <th className="text-left px-4 py-3 border-r">Submittal No.</th>
+                <th className="text-left px-4 py-3 border-r">Description</th>
+                <th className="text-center px-4 py-3">Document Link</th>
+              </tr>
+            </thead>
+            <tbody>
+              {results.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="text-center py-4 text-gray-500">
+                    No records found
+                  </td>
+                </tr>
+              ) : (
+                results.map((item, idx) => (
+                  <tr
+                    key={idx}
+                    className={`border-t border-b border-gray-300 ${
+                      idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                    } hover:bg-gray-100 transition duration-150`}
+                  >
+                    <td className="px-4 py-3 border-r">{item.submittalNo}</td>
+                    <td className="px-4 py-3 border-r">{item.description}</td>
+                    <td className="px-4 py-3 text-center">
+                      <a
+                        href={item.documentLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        View
+                      </a>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         )}
       </div>
     </div>
