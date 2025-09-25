@@ -1,9 +1,10 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 
-
 const QuickActions = ({ userRole }) => {
+  const navigate = useNavigate();
+
   const getQuickActions = () => {
     const commonActions = [
       {
@@ -19,7 +20,7 @@ const QuickActions = ({ userRole }) => {
         description: "Advanced Project Planning - Today 2:00 PM",
         icon: "Clock",
         color: "bg-warning",
-        link: "/schedule-management-booking?tab=mybookings",
+        link: "/schedule-management-booking?tab=mybookings", // 👈 still here
         urgent: true
       },
       {
@@ -54,7 +55,7 @@ const QuickActions = ({ userRole }) => {
       ],
       instructor: [
         {
-          title: "Today\'s Classes",
+          title: "Today's Classes",
           description: "2 sessions scheduled",
           icon: "Users",
           color: "bg-confidence-teal",
@@ -89,6 +90,15 @@ const QuickActions = ({ userRole }) => {
 
   const actions = getQuickActions();
 
+  const handleClick = (action) => {
+    // Special case: Upcoming Session
+    if (action.title === "Upcoming Session") {
+      navigate("/schedule-management-booking?tab=mybookings");
+    } else {
+      navigate(action.link);
+    }
+  };
+
   return (
     <div className="bg-card rounded-xl p-6 construction-shadow">
       <div className="flex items-center justify-between mb-6">
@@ -97,12 +107,13 @@ const QuickActions = ({ userRole }) => {
         </h3>
         <Icon name="Zap" size={20} className="text-accent" />
       </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {actions?.map((action, index) => (
-          <Link
+          <div
             key={index}
-            to={action?.link}
-            className="group block p-4 bg-background rounded-lg border border-border hover:border-primary construction-transition hover:construction-shadow-lg"
+            onClick={() => handleClick(action)}
+            className="group block p-4 cursor-pointer bg-background rounded-lg border border-border hover:border-primary construction-transition hover:construction-shadow-lg"
           >
             <div className="flex items-start space-x-3">
               <div className={`flex items-center justify-center w-10 h-10 ${action?.color} rounded-lg flex-shrink-0 relative`}>
@@ -113,7 +124,7 @@ const QuickActions = ({ userRole }) => {
                   </span>
                 )}
               </div>
-              
+
               <div className="flex-1 min-w-0">
                 <div className="flex items-center space-x-2">
                   <h4 className="font-semibold text-authority-charcoal group-hover:text-primary construction-transition">
@@ -127,16 +138,17 @@ const QuickActions = ({ userRole }) => {
                   {action?.description}
                 </p>
               </div>
-              
-              <Icon 
-                name="ChevronRight" 
-                size={16} 
-                className="text-professional-gray group-hover:text-primary construction-transition flex-shrink-0" 
+
+              <Icon
+                name="ChevronRight"
+                size={16}
+                className="text-professional-gray group-hover:text-primary construction-transition flex-shrink-0"
               />
             </div>
-          </Link>
+          </div>
         ))}
       </div>
+
       {/* Emergency Contact */}
       <div className="mt-6 p-4 bg-muted rounded-lg border-l-4 border-action-orange">
         <div className="flex items-center space-x-3">

@@ -23,12 +23,12 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
         { name: 'Assessments', path: '/assessment-feedback-center', icon: 'ClipboardCheck' },
       ]
     },
-    {
-      category: 'Community',
-      items: [
-        { name: 'Learning Hub', path: '/community-learning-hub', icon: 'Users' },
-      ]
-    }
+    // {
+    //   category: 'Community',
+    //   items: [
+    //     { name: 'Learning Hub', path: '/community-learning-hub', icon: 'Users' },
+    //   ]
+    // }
   ];
  
   const isActivePath = (path) => location?.pathname === path;

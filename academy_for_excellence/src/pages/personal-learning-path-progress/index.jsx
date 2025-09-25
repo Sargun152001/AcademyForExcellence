@@ -713,11 +713,11 @@ useEffect(() => {
                   Take Assessment
                 </Button>
               </Link>
-              <Link to="/community-learning-hub">
+              {/* <Link to="/community-learning-hub">
                 <Button variant="outline" iconName="Users">
                   Join Community
                 </Button>
-              </Link>
+              </Link> */}
             </div>
           </div>
         </section>

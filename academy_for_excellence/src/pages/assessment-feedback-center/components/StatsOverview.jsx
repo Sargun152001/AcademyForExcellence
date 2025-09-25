@@ -1,11 +1,11 @@
 import React from 'react';
 import Icon from '../../../components/AppIcon';
 
-const StatsOverview = ({ stats, pendingFeedbackCount = 0 }) => {
+const StatsOverview = ({ stats, pendingFeedbackCount = 0, completedAssessmentCount = 0 }) => {
   const statCards = [
     {
       title: 'Completed Assessments',
-      value: stats?.completedAssessments || 1,
+      value: completedAssessmentCount,
       icon: 'CheckCircle',
       color: 'text-success',
       bgColor: 'bg-success/10',

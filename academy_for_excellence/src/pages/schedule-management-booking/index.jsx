@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from "react-router-dom";  // 👈 add this
 import { Helmet } from 'react-helmet';
 import Header from '../../components/ui/Header';
 import Sidebar from '../../components/ui/Sidebar';
@@ -10,25 +11,32 @@ import CourseCard from './components/CourseCard';
 import BookingForm from './components/BookingForm';
 import FilterPanel from './components/FilterPanel';
 import UpcomingBookings from './components/UpcomingBookings';
-import { getCourses } from "../../services/businessCentralApi";
-import { createBooking,getUserBookings } from "../../services/businessCentralApi";
-
-
+import { getCourses, createBooking, getUserBookings } from "../../services/businessCentralApi";
 
 const ScheduleManagementBooking = () => {
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+
+  // normalize query param -> valid tab key
+  const getInitialTab = () => {
+    if (tabParam === "mybookings") return "bookings";
+    if (tabParam === "browse") return "browse";
+    return "browse"; // default
+  };
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [activeTab, setActiveTab] = useState('browse');
+  const [activeTab, setActiveTab] = useState(getInitialTab()); // 👈 use query param if present
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [bookings, setBookings] = useState([]);
-const [bookingsLoading, setBookingsLoading] = useState(false);
-const [bookingsError, setBookingsError] = useState(null);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [bookingsError, setBookingsError] = useState(null);
   const [showDirectBookingForm, setShowDirectBookingForm] = useState(false);
   const [courses, setCourses] = useState([]);
-const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     category: '',
     level: '',
@@ -42,71 +50,61 @@ const [loading, setLoading] = useState(true);
     newCoursesOnly: false
   });
 
+  // load courses...
+  useEffect(() => {
+    const loadCourses = async () => {
+      setLoading(true);
+      try {
+        const queryFilters = {
+          search: searchQuery,
+          category: filters?.category || undefined,
+        };
+        const fetchedCourses = await getCourses(queryFilters);
+        setCourses(fetchedCourses);
+      } catch (err) {
+        console.error("❌ Failed to load courses:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadCourses();
+  }, [searchQuery, filters?.category]);
 
+  // load bookings if activeTab is "bookings"
+  useEffect(() => {
+    if (activeTab === "bookings") {
+      fetchUserBookings();
+    }
+  }, [activeTab]);
 
-
-useEffect(() => {
-  const loadCourses = async () => {
-    setLoading(true);
+  const fetchUserBookings = async () => {
+    setBookingsLoading(true);
+    setBookingsError(null);
     try {
-      const queryFilters = {
-        search: searchQuery,
-        category: filters?.category || undefined,
-      };
-
-      const fetchedCourses = await getCourses(queryFilters);
-      setCourses(fetchedCourses);
+      const data = await getUserBookings();
+      const normalized = data.map(b => ({
+        bookingId: b.bookingId,
+        courseTitle: b.courseName,
+        date: b.date,
+        time: b.time,
+        location: b.location,
+        status: b.status,
+        duration: b.duration,
+        instructor: b.instructor || { name: "TBD", title: "", rating: 0 },
+        specialRequirements: b.specialRequirements,
+        rating: b.rating,
+        totalRatings: b.totalRatings,
+        imageUrl: b.imageUrl,
+      }));
+      console.log("Mapped bookings:", normalized);
+      setBookings(normalized || []);
     } catch (err) {
-      console.error("❌ Failed to load courses:", err);
+      console.error("Failed to load bookings:", err);
+      setBookingsError("Failed to load bookings. Please try again.");
     } finally {
-      setLoading(false);
+      setBookingsLoading(false);
     }
   };
-
-  loadCourses();
-}, [searchQuery, filters?.category]);
-
-
-useEffect(() => {
-  if (activeTab === 'bookings') {
-    fetchUserBookings();
-  }
-}, [activeTab]);
-
-const fetchUserBookings = async () => {
-  setBookingsLoading(true);
-  setBookingsError(null);
-  try {
-    // Fetch bookings merged with courses
-    const data = await getUserBookings();
-
-    // ✅ No extra remapping needed, just pass fields as-is
-    const normalized = data.map(b => ({
-      bookingId: b.bookingId,
-      courseTitle: b.courseName,
-      date: b.date,
-      time: b.time,
-      location: b.location,
-      status: b.status,
-      duration: b.duration,
-      instructor: b.instructor || { name: "TBD", title: "", rating: 0 },
-      specialRequirements: b.specialRequirements,
-      rating: b.rating,
-      totalRatings: b.totalRatings,
-      imageUrl: b.imageUrl,
-    }));
-
-    console.log("Mapped bookings:", normalized);
-    setBookings(normalized || []);
-  } catch (err) {
-    console.error('Failed to load bookings:', err);
-    setBookingsError('Failed to load bookings. Please try again.');
-  } finally {
-    setBookingsLoading(false);
-  }
-};
-
-
   // Mock data for courses
   // const mockCourses = [
   //   {

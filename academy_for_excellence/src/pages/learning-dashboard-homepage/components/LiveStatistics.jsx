@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
-import { getCertificatesForAll } from 'services/businessCentralApi';
+import { getCertificatesForAll, getAssessmentsAndFeedbacks } from 'services/businessCentralApi';
+import Button from 'components/ui/Button';
 
 const LiveStatistics = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
-    const [certificatesData, setCertificatesData] = useState([]);
+  const [certificatesData, setCertificatesData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // ADD THIS NEW LINE:
+  const [assessmentFeedbackData, setAssessmentFeedbackData] = useState([]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -16,29 +20,59 @@ const LiveStatistics = () => {
     return () => clearInterval(timer);
   }, []);
 
-useEffect(() => {
-    const fetchCertificates = async () => {
+  const getResourceEmail = () => {
+    try {
+      const userResource = localStorage.getItem('userResource');
+      if (userResource) {
+        const resource = JSON.parse(userResource);
+        if (resource.email) {
+          return resource.email;
+        }
+      }
+      const userData = localStorage.getItem('userData');
+      if (userData) {
+        const user = JSON.parse(userData);
+        if (user.email) {
+          return user.email;
+        }
+      }
+      return null;
+    } catch (err) {
+      console.error('[DEBUG] Error getting email from localStorage:', err);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
- 
-        // console.log('[DEBUG] Fetching certificates data...');
+
         const certificates = await getCertificatesForAll();
- 
+
         setCertificatesData(certificates || []);
         // console.log('[DEBUG] Successfully loaded certificates:', certificates);
+
+        // ADD THIS SECTION:
+        // Fetch assessment and feedback data
+        const resourceEmail = getResourceEmail();
+        if (resourceEmail) {
+          const assessmentFeedback = await getAssessmentsAndFeedbacks(resourceEmail);
+          setAssessmentFeedbackData(assessmentFeedback || []);
+        }
       } catch (err) {
         // console.error('[DEBUG] Error fetching certificates:', err);
-        setError('Failed to load certificates data');
+        setError('Failed to load data');
       } finally {
         setLoading(false);
       }
     };
- 
-    fetchCertificates();
+
+    fetchData();
   }, []); // Empty dependency array - fetch once on mount
 
-    const formatCompletionDate = (dateString) => {
+  const formatCompletionDate = (dateString) => {
     try {
       const date = new Date(dateString);
       return date.toLocaleDateString('en-US', {
@@ -50,7 +84,64 @@ useEffect(() => {
       return dateString;
     }
   };
- 
+
+  // ADD THESE TWO NEW FUNCTIONS:
+  const formatUpcomingDate = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (err) {
+      return dateString;
+    }
+  };
+
+  const generateUpcomingDeadlines = (assessmentFeedbackData) => {
+    const pendingAssessments = assessmentFeedbackData
+      .filter(course => {
+        const courseDate = new Date(course.date);
+        const today = new Date();
+        courseDate.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+        return courseDate.getTime() < today.getTime() && course.assessmentStatus === 'pending';
+      })
+      .map(course => ({
+        title: course.courseName,
+        type: 'Assessment',
+        dueDate: formatUpcomingDate(course.date),
+        priority: 'high',
+        course: course.courseName,
+        itemType: 'assessment'
+      }));
+
+    const pendingFeedback = assessmentFeedbackData
+      .filter(course => {
+        if (!course.feedbackSubmitted) {
+          const courseDate = new Date(course?.date);
+          const today = new Date();
+          courseDate.setHours(0, 0, 0, 0);
+          today.setHours(0, 0, 0, 0);
+          return courseDate.getTime() < today.getTime();
+        }
+        return false;
+      })
+      .map(course => ({
+        title: course.courseName,
+        type: 'Feedback',
+        dueDate: formatUpcomingDate(course.date),
+        priority: 'medium',
+        course: course.courseName,
+        itemType: 'feedback'
+      }));
+
+    // Combine and return all pending items
+    return [...pendingAssessments, ...pendingFeedback]; // Show top 5 items
+  };
+
+
   // Generate recent achievements from certificates data
   const generateRecentAchievements = (certificates) => {
     return certificates
@@ -108,29 +199,30 @@ useEffect(() => {
     }
   ];
 
-  const upcomingDeadlines = [
-    {
-      title: "Project Risk Assessment",
-      type: "Assessment",
-      dueDate: "Today, 6:00 PM",
-      priority: "high",
-      course: "Advanced Risk Management"
-    },
-    {
-      title: "Safety Protocol Quiz",
-      type: "Quiz",
-      dueDate: "Tomorrow, 2:00 PM",
-      priority: "medium",
-      course: "Construction Safety Standards"
-    },
-    {
-      title: "Leadership Evaluation",
-      type: "Peer Review",
-      dueDate: "Dec 8, 10:00 AM",
-      priority: "low",
-      course: "Team Leadership Mastery"
-    }
-  ];
+  // REPLACE THIS ENTIRE SECTION:
+  const upcomingDeadlines = (assessmentFeedbackData.length > 0 && !loading)
+    ? generateUpcomingDeadlines(assessmentFeedbackData)
+    : loading
+      ? [] // Empty array while loading - we'll handle loading state in JSX
+      : [
+        {
+          title: "Project Risk Assessment",
+          type: "Assessment",
+          dueDate: "Today",
+          priority: "high",
+          course: "Advanced Risk Management",
+          itemType: 'assessment'
+        },
+        {
+          title: "Safety Protocol Quiz",
+          type: "Feedback",
+          dueDate: "Tomorrow",
+          priority: "medium",
+          course: "Construction Safety Standards",
+          itemType: 'feedback'
+        }
+      ];
+
 
   // const recentAchievements = [
   //   {
@@ -171,7 +263,7 @@ useEffect(() => {
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'high': return 'border-l-error bg-error/5';
-      case 'medium': return 'border-l-warning bg-warning/5';
+      case 'medium': return 'border-l-primary bg-primary/5';
       case 'low': return 'border-l-success bg-success/5';
       default: return 'border-l-professional-gray bg-muted';
     }
@@ -186,9 +278,23 @@ useEffect(() => {
     }
   };
 
+  // REPLACE the existing handlePendingClick function with these:
+  const handleAssessmentClick = (deadline) => {
+    console.log('Start Assessment clicked for:', deadline.title);
+    // Add your assessment logic here
+    // You can navigate to assessment page or open assessment modal
+  };
+
+  const handleFeedbackClick = (deadline) => {
+    console.log('Complete Feedback clicked for:', deadline.title);
+    // Add your feedback logic here
+    // You can navigate to feedback page or open feedback modal
+  };
+
+
   return (
     <div className="space-y-6">
-        {/* Error Display */}
+      {/* Error Display */}
       {error && (
         <div className="bg-card rounded-xl p-4 construction-shadow">
           <div className="flex items-center space-x-2 text-yellow-700">
@@ -201,13 +307,13 @@ useEffect(() => {
       <div className="bg-card rounded-xl p-6 construction-shadow">
         <div className="text-center">
           <div className="text-3xl font-bold text-authority-charcoal mb-2">
-            {currentTime?.toLocaleTimeString('en-US', { 
+            {currentTime?.toLocaleTimeString('en-US', {
               hour12: false,
               timeZone: 'Asia/Dubai'
             })}
           </div>
           <div className="text-sm text-professional-gray">
-            {currentTime?.toLocaleDateString('en-US', { 
+            {currentTime?.toLocaleDateString('en-US', {
               weekday: 'long',
               year: 'numeric',
               month: 'long',
@@ -251,36 +357,36 @@ useEffect(() => {
       </div> */}
 
 
-{/* Communication Channels */}
-<div className="bg-card rounded-xl p-6 construction-shadow">
-  <div className="flex items-center justify-between mb-6">
-    <h3 className="text-xl font-heading font-semibold text-authority-charcoal">
-      Communication Channels
-    </h3>
-  </div>
+      {/* Communication Channels */}
+      <div className="bg-card rounded-xl p-6 construction-shadow">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-heading font-semibold text-authority-charcoal">
+            Communication Channels
+          </h3>
+        </div>
 
-  <div className="space-y-3">
-    <button
-      onClick={() => {
-        window.open("https://teams.microsoft.com", "_blank");
-      }}
-      className="flex items-center px-4 py-3 rounded-lg bg-primary text-white hover:bg-primary/90 transition w-full"
-    >
-      <Icon name="MessageSquare" size={20} className="mr-2" />
-      <span className="font-medium text-base">Open Microsoft Teams</span>
-    </button>
+        <div className="space-y-3">
+          <button
+            onClick={() => {
+              window.open("https://teams.microsoft.com", "_blank");
+            }}
+            className="flex items-center px-4 py-3 rounded-lg bg-primary text-white hover:bg-primary/90 transition w-full"
+          >
+            <Icon name="MessageSquare" size={20} className="mr-2" />
+            <span className="font-medium text-base">Open Microsoft Teams</span>
+          </button>
 
-    <button
-      onClick={() => {
-        window.open("https://outlook.office.com/mail/", "_blank");
-      }}
-      className="flex items-center px-4 py-3 rounded-lg bg-primary text-white hover:bg-primary/90 transition w-full"
-    >
-      <Icon name="Mail" size={20} className="mr-2" />
-      <span className="font-medium text-base">Open Microsoft Outlook</span>
-    </button>
-  </div>
-</div>
+          <button
+            onClick={() => {
+              window.open("https://outlook.office.com/mail/", "_blank");
+            }}
+            className="flex items-center px-4 py-3 rounded-lg bg-primary text-white hover:bg-primary/90 transition w-full"
+          >
+            <Icon name="Mail" size={20} className="mr-2" />
+            <span className="font-medium text-base">Open Microsoft Outlook</span>
+          </button>
+        </div>
+      </div>
 
 
 
@@ -293,34 +399,102 @@ useEffect(() => {
           <Icon name="Clock" size={20} className="text-warning" />
         </div>
 
-        <div className="space-y-3">
-          {upcomingDeadlines?.map((deadline, index) => (
-            <div key={index} className={`p-4 rounded-lg border-l-4 ${getPriorityColor(deadline?.priority)}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <h4 className="font-medium text-authority-charcoal">
-                    {deadline?.title}
-                  </h4>
-                  <p className="text-sm text-professional-gray">
-                    {deadline?.course} • {deadline?.type}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium text-authority-charcoal">
-                    {deadline?.dueDate}
+        {/* ADD LOADING STATE */}
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="p-4 rounded-lg border-l-4 border-l-gray-300 bg-gray-50 animate-pulse">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-gray-300 rounded w-1/2 mb-1"></div>
+                    <div className="h-2 bg-gray-300 rounded w-1/4"></div>
                   </div>
-                  <div className={`text-xs capitalize ${
-                    deadline?.priority === 'high' ? 'text-error' :
-                    deadline?.priority === 'medium' ? 'text-warning' : 'text-success'
-                  }`}>
-                    {deadline?.priority} priority
+                  <div className="text-right">
+                    <div className="h-6 bg-gray-300 rounded-full w-16"></div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div
+            className="space-y-3 max-h-96 overflow-y-auto pr-2"
+            style={{
+              scrollbarWidth: 'thin',
+              scrollbarColor: '#cbd5e0 #f7fafc'
+            }}
+          >
+            {upcomingDeadlines?.map((deadline, index) => (
+              <div key={index} className={`p-4 rounded-lg border-l-4 ${getPriorityColor(deadline?.priority)}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <h4 className="font-medium text-authority-charcoal">
+                      {deadline?.title}
+                    </h4>
+                    <p className="text-sm text-professional-gray">
+                      <span className="text-xs text-professional-gray">Due Date:</span> {deadline?.dueDate}
+                    </p>
+                    <div className="mt-1">
+                      <span className={`inline-block px-2 py-1 rounded text-xs font-bold ${deadline?.type === 'Assessment'
+                        ? 'bg-red-100 text-red-700'
+                        : 'bg-blue-100 text-blue-700'
+                        }`}>
+                        {deadline?.type}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    {/* UPDATED: Dynamic button based on type */}
+                    {deadline?.type === 'Assessment' ? (
+                      <Button
+                        onClick={() => handleAssessmentClick(deadline)}
+                        className="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors max-w-[80px] min-w-0"
+                        style={{
+                          whiteSpace: 'normal',
+                          wordWrap: 'break-word',
+                          lineHeight: '1.2',
+                          textAlign: 'center'
+                        }}
+                        iconName="Play"
+                        iconPosition="left"
+                      >
+                        <span className="break-words">Start</span>
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => handleFeedbackClick(deadline)}
+                        className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors max-w-[80px] min-w-0"
+                        style={{
+                          whiteSpace: 'normal',
+                          wordWrap: 'break-word',
+                          lineHeight: '1.2',
+                          textAlign: 'center'
+                        }}
+                        iconName="MessageSquare"
+                        iconPosition="left"
+                      >
+                        <span className="break-words">Provide</span>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {upcomingDeadlines.length === 0 && !loading && (
+              <div className="text-center py-8 text-professional-gray">
+                <Icon name="CheckCircle" size={32} className="mx-auto mb-2 opacity-50" />
+                <p>No pending deadlines</p>
+                <p className="text-xs mt-1">All assessments and feedback are up to date</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+
+
       {/* Recent Achievements */}
       <div className="bg-card rounded-xl p-6 construction-shadow">
         <div className="flex items-center justify-between mb-6">
@@ -330,7 +504,7 @@ useEffect(() => {
           <Icon name="Trophy" size={20} className="text-accent" />
         </div>
 
-                {loading ? (
+        {loading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="flex items-center space-x-3 p-3 bg-background rounded-lg animate-pulse">
@@ -381,7 +555,7 @@ useEffect(() => {
             )}
           </div>
         )}
- 
+
 
         {/* <div className="space-y-4">
           {recentAchievements?.map((achievement, index) => (
