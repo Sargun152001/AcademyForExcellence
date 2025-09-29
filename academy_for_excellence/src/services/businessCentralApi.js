@@ -919,7 +919,7 @@ export const createBooking = async (bookingData) => {
     const { courseId, bookingDetails = {}, isDirectBooking, userId } = bookingData;
 
     const scheduleID = generateScheduleId();
-     const bookingNo = generateBookingNo();
+    //  const bookingNo = generateBookingNo();
 
     // Validate required IDs
     if (!scheduleID || !courseId) {
@@ -945,7 +945,7 @@ export const createBooking = async (bookingData) => {
 
     // Build payload using camelCase for BC API
     const payload = {
-      bookingNo,
+      // bookingNo,
       scheduleID,
       courseId,
       userId: userId || "1",
