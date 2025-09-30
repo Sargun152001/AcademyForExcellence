@@ -539,13 +539,15 @@ const categories = useMemo(() => {
             onViewModeChange={setViewMode}
             totalResults={filteredAndSortedCourses?.length}
             onToggleFilters={() => setIsFilterSidebarOpen(!isFilterSidebarOpen)}
+            loading={loading}
           />
 
           {/* Category Tabs */}
           <CategoryTabs
             activeCategory={activeCategory}
             onCategoryChange={setActiveCategory}
-            categories={categories}
+                categories={loading ? [] : categories} 
+            loading={loading} 
           />
 
           <div className="flex">
@@ -562,115 +564,152 @@ const categories = useMemo(() => {
 
             {/* Course Grid/List */}
             <div className="flex-1 p-6">
-              {/* Results Header */}
+             {/* Results Header */}
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h1 className="text-2xl font-heading font-bold text-authority-charcoal mb-2">
-                    {activeCategory === 'all' ? 'All Courses' : 
-                     categories?.find(cat => cat?.id === activeCategory)?.name + ' Courses'}
+                    {activeCategory === 'all' ? 'All Courses' :
+                      categories?.find(cat => cat?.id === activeCategory)?.name + ' Courses'}
                   </h1>
                   <p className="text-professional-gray">
-                    {filteredAndSortedCourses?.length} courses found
-                    {searchQuery && ` for "${searchQuery}"`}
+                  {loading ? (
+                      "Loading..."
+                    ) : (
+                      `${filteredAndSortedCourses?.length} courses found${searchQuery ? ` for "${searchQuery}"` : ''}`
+                    )}
                   </p>
                 </div>
               </div>
-
-              {/* Course Grid/List */}
-              {paginatedCourses?.length > 0 ? (
-                <>
-                  <div className={viewMode === 'grid' ?'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8' :'space-y-6 mb-8'
-                  }>
-                    {paginatedCourses?.map((course) => (
-                      viewMode === 'grid' ? (
-                        <CourseCard
-                          key={course?.id}
-                          course={course}
-                          onEnroll={handleEnroll}
-                          onWishlist={handleWishlist}
-                          isWishlisted={wishlistedCourses?.includes(course?.id)}
-                        />
-                      ) : (
-                        <CourseListItem
-                          key={course?.id}
-                          course={course}
-                          onEnroll={handleEnroll}
-                          onWishlist={handleWishlist}
-                          isWishlisted={wishlistedCourses?.includes(course?.id)}
-                        />
-                      )
-                    ))}
-                  </div>
-
-                  {/* Pagination */}
-                  {totalPages > 1 && (
-                    <div className="flex items-center justify-center space-x-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        iconName="ChevronLeft"
-                        iconPosition="left"
-                      >
-                        Previous
-                      </Button>
-                      
-                      <div className="flex items-center space-x-1">
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                          const page = i + 1;
-                          return (
-                            <Button
-                              key={page}
-                              variant={currentPage === page ? 'default' : 'outline'}
-                              onClick={() => handlePageChange(page)}
-                              size="sm"
-                            >
-                              {page}
-                            </Button>
-                          );
-                        })}
-                        
-                        {totalPages > 5 && (
-                          <>
-                            <span className="text-professional-gray">...</span>
-                            <Button
-                              variant={currentPage === totalPages ? 'default' : 'outline'}
-                              onClick={() => handlePageChange(totalPages)}
-                              size="sm"
-                            >
-                              {totalPages}
-                            </Button>
-                          </>
-                        )}
-                      </div>
-
-                      <Button
-                        variant="outline"
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        iconName="ChevronRight"
-                        iconPosition="right"
-                      >
-                        Next
-                      </Button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                /* No Results */
-                (<div className="text-center py-16">
-                  <Icon name="Search" size={64} className="text-professional-gray mx-auto mb-4" />
-                  <h3 className="text-xl font-heading font-semibold text-authority-charcoal mb-2">
-                    No courses found
-                  </h3>
-                  <p className="text-professional-gray mb-6">
-                    Try adjusting your search criteria or filters to find more courses.
-                  </p>
-                  <Button onClick={handleClearFilters}>
-                    Clear All Filters
-                  </Button>
-                </div>)
-              )}
+            {/* Course Grid/List */}
+{loading ? (
+  /* Loading Skeleton */
+  <div className={viewMode === 'grid'
+    ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8'
+    : 'space-y-6 mb-8'
+  }>
+    {Array.from({ length: coursesPerPage }, (_, index) => (
+      <div key={index} className={viewMode === 'grid'
+        ? 'bg-white rounded-lg border border-accent-sage/20 p-6 animate-pulse'
+        : 'bg-white rounded-lg border border-accent-sage/20 p-6 flex items-center space-x-6 animate-pulse'
+      }>
+        {/* Course Card Skeleton */}
+        <div className={viewMode === 'grid' ? 'space-y-4' : 'flex-shrink-0'}>
+          <div className={`bg-gray-200 rounded ${viewMode === 'grid' ? 'h-48 w-full' : 'h-24 w-32'}`} />
+          {viewMode === 'list' && (
+            <div className="flex-1 min-w-0 space-y-3">
+              <div className="h-6 bg-gray-200 rounded w-3/4" />
+              <div className="h-4 bg-gray-200 rounded w-full" />
+              <div className="h-4 bg-gray-200 rounded w-5/6" />
+            </div>
+          )}
+        </div>
+        {viewMode === 'grid' && (
+          <div className="space-y-3">
+            <div className="h-6 bg-gray-200 rounded w-3/4" />
+            <div className="h-4 bg-gray-200 rounded w-full" />
+            <div className="h-4 bg-gray-200 rounded w-5/6" />
+            <div className="h-10 bg-gray-200 rounded w-1/3" />
+          </div>
+        )}
+      </div>
+    ))}
+  </div>
+) : paginatedCourses?.length > 0 ? (
+  <>
+    <div className={viewMode === 'grid'
+      ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8'
+      : 'space-y-6 mb-8'
+    }>
+      {paginatedCourses?.map((course) => (
+        viewMode === 'grid' ? (
+          <CourseCard
+            key={course?.id}
+            course={course}
+            onEnroll={handleEnroll}
+            onWishlist={handleWishlist}
+            isWishlisted={wishlistedCourses?.includes(course?.id)}
+          />
+        ) : (
+          <CourseListItem
+            key={course?.id}
+            course={course}
+            onEnroll={handleEnroll}
+            onWishlist={handleWishlist}
+            isWishlisted={wishlistedCourses?.includes(course?.id)}
+          />
+        )
+      ))}
+    </div>
+ 
+    {/* Pagination - only show when not loading */}
+    {totalPages > 1 && (
+      <div className="flex items-center justify-center space-x-2">
+        <Button
+          variant="outline"
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          iconName="ChevronLeft"
+          iconPosition="left"
+        >
+          Previous
+        </Button>
+       
+        <div className="flex items-center space-x-1">
+          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+            const page = i + 1;
+            return (
+              <Button
+                key={page}
+                variant={currentPage === page ? 'default' : 'outline'}
+                onClick={() => handlePageChange(page)}
+                size="sm"
+              >
+                {page}
+              </Button>
+            );
+          })}
+         
+          {totalPages > 5 && (
+            <>
+              <span className="text-professional-gray">...</span>
+              <Button
+                variant={currentPage === totalPages ? 'default' : 'outline'}
+                onClick={() => handlePageChange(totalPages)}
+                size="sm"
+              >
+                {totalPages}
+              </Button>
+            </>
+          )}
+        </div>
+ 
+        <Button
+          variant="outline"
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          iconName="ChevronRight"
+          iconPosition="right"
+        >
+          Next
+        </Button>
+      </div>
+    )}
+  </>
+) : (
+  /* No Results */
+  <div className="text-center py-16">
+    <Icon name="Search" size={64} className="text-professional-gray mx-auto mb-4" />
+    <h3 className="text-xl font-heading font-semibold text-authority-charcoal mb-2">
+      No courses found
+    </h3>
+    <p className="text-professional-gray mb-6">
+      Try adjusting your search criteria or filters to find more courses.
+    </p>
+    <Button onClick={handleClearFilters}>
+      Clear All Filters
+    </Button>
+  </div>
+)}
             </div>
           </div>
         </main>

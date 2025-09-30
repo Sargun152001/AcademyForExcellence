@@ -5,6 +5,7 @@ import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import JobTargetsTree from "./components/RecentActivity"; 
 import ProgressOverview from './components/ProgressOverview';
+import Sidebar from '../../components/ui/Sidebar';
 import SkillProgressCard from './components/SkillProgressCard';
 import LearningPathTimeline from './components/LearningPathTimeline';
 import AchievementBadge from './components/AchievementBadge';
@@ -23,12 +24,24 @@ const PersonalLearningPathProgress = () => {
   const [learningPathData, setLearningPathData] = useState([]);
   const [currentStageIndex, setCurrentStageIndex] = useState(0);
 const [currentStageTitle, setCurrentStageTitle] = useState('');
+const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Load saved language
-  useEffect(() => {
+   useEffect(() => {
     const savedLanguage = localStorage.getItem('selectedLanguage') || 'en';
     setCurrentLanguage(savedLanguage);
+
+    const savedSidebarState = localStorage.getItem('sidebarCollapsed');
+    if (savedSidebarState) {
+      setSidebarCollapsed(JSON.parse(savedSidebarState));
+    }
   }, []);
+
+  const toggleSidebar = () => {
+    const newState = !sidebarCollapsed;
+    setSidebarCollapsed(newState);
+    localStorage.setItem('sidebarCollapsed', JSON.stringify(newState));
+  };
+
 
   const userProfile = JSON.parse(localStorage.getItem('userData') || '{}');
   const resourceId = userProfile?.id;
@@ -481,89 +494,72 @@ useEffect(() => {
 
   ];
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="pt-16">
-        {/* Hero Section */}
-        <section className="bg-gradient-to-r from-primary to-secondary text-primary-foreground py-12">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col lg:flex-row items-center justify-between">
-              <div className="flex items-center space-x-6 mb-6 lg:mb-0">
-                <div className="relative">
-                  <img
-                    src={userProfile?.imageUrl}
-                    alt={userProfile?.name}
-                    className="w-24 h-24 rounded-full border-4 border-primary-foreground/20"
-                  />
-                  {/* <div className="absolute -bottom-2 -right-2 bg-accent text-accent-foreground rounded-full px-2 py-1 text-xs font-bold">
-                    #{userProfile?.rank}
-                  </div> */}
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold mb-2">{userProfile?.name}</h1>
-                  <p className="text-primary-foreground/80 mb-1">{userProfile?.role}</p>
-                  <p className="text-primary-foreground/60 text-sm">{userProfile?.department}</p>
-                  <div className="flex items-center space-x-4 mt-3">
-                    <div className="flex items-center space-x-2">
-                      {/* <Icon name="Calendar" size={16} /> */}
-                      <span className="text-sm">
-                        {/* Joined {new Date(userProfile.joinDate)?.toLocaleDateString('en-US', {
-                          month: 'long',
-                          year: 'numeric' */}
-                        {/* })} */}
-                      </span>
-                    </div>
-                    {/* <div className="flex items-center space-x-2">
-                      <Icon name="Star" size={16} />
-                      <span className="text-sm">{userProfile?.totalPoints} points</span>
-                    </div> */}
-                  </div>
-                </div>
-              </div>
+return (
+  <div className="min-h-screen bg-background">
+    <Header />
+    {/* ✅ Sidebar added */}
+    <Sidebar 
+      isCollapsed={sidebarCollapsed} 
+      onToggleCollapse={toggleSidebar} 
+    />
 
-              <div className="text-center lg:text-right">
-                <div className="bg-primary-foreground/10 rounded-lg p-6 backdrop-blur-sm">
-                  {/* <h3 className="text-lg font-semibold mb-2">{userProfile?.currentLevel}</h3> */}
-                  <div className="space-y-2">
-                    {/* <div className="flex justify-between text-sm">
-                      <span>Progress to Expert</span>
-                      <span>{userProfile?.totalPoints}/{userProfile?.nextLevelPoints}</span>
-                    </div> */}
-                    <div className="w-48 bg-primary-foreground/20 rounded-full h-2">
-                      {/* <div 
-                        className="bg-accent h-2 rounded-full construction-transition"
-                        style={{ width: `${(userProfile?.totalPoints / userProfile?.nextLevelPoints) * 100}%` }}
-                      ></div> */}
-                    </div>
-                    {/* <p className="text-xs text-primary-foreground/70">
-                      {userProfile?.nextLevelPoints - userProfile?.totalPoints} points to next level
-                    </p> */}
+    {/* ✅ Apply left margin depending on sidebar state */}
+    <main className={`pt-16 transition-all ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`}>
+      {/* Hero Section */}
+      <section className="bg-gradient-to-r from-primary to-secondary text-primary-foreground py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col lg:flex-row items-center justify-between">
+            <div className="flex items-center space-x-6 mb-6 lg:mb-0">
+              <div className="relative">
+                <img
+                  src={userProfile?.imageUrl}
+                  alt={userProfile?.name}
+                  className="w-24 h-24 rounded-full border-4 border-primary-foreground/20"
+                />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold mb-2">{userProfile?.name}</h1>
+                <p className="text-primary-foreground/80 mb-1">{userProfile?.role}</p>
+                <p className="text-primary-foreground/60 text-sm">{userProfile?.department}</p>
+                <div className="flex items-center space-x-4 mt-3">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm">
+                      {/* Joined date logic here if needed */}
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
 
-        {/* Navigation Tabs */}
-        <section className="bg-card border-b border-border sticky top-16 z-30">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex space-x-1 overflow-x-auto py-4">
-              {tabs?.map((tab) => (
-                <Button
-                  key={tab?.id}
-                  variant={activeTab === tab?.id ? 'default' : 'ghost'}
-                  onClick={() => setActiveTab(tab?.id)}
-                  className="flex items-center space-x-2 whitespace-nowrap"
-                >
-                  <Icon name={tab?.icon} size={18} />
-                  <span>{tab?.label}</span>
-                </Button>
-              ))}
+            <div className="text-center lg:text-right">
+              <div className="bg-primary-foreground/10 rounded-lg p-6 backdrop-blur-sm">
+                <div className="space-y-2">
+                  <div className="w-48 bg-primary-foreground/20 rounded-full h-2"></div>
+                </div>
+              </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
+
+      {/* Navigation Tabs */}
+      <section className="bg-card border-b border-border sticky top-16 z-30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex space-x-1 overflow-x-auto py-4">
+            {tabs?.map((tab) => (
+              <Button
+                key={tab?.id}
+                variant={activeTab === tab?.id ? 'default' : 'ghost'}
+                onClick={() => setActiveTab(tab?.id)}
+                className="flex items-center space-x-2 whitespace-nowrap"
+              >
+                <Icon name={tab?.icon} size={18} />
+                <span>{tab?.label}</span>
+              </Button>
+            ))}
+          </div>
+        </div>
+      </section>
 
         {/* Content Sections */}
         <section className="py-8">

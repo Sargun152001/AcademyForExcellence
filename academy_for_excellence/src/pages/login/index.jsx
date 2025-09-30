@@ -131,7 +131,7 @@ const LoginPage = () => {
         const email = user?.username || user?.email || getAccount()?.username;
         if (!email) {
           console.warn('[DEBUG] No email found, navigating directly.');
-          navigate('/learning-dashboard-homepage', { replace: true });
+          navigate( '/personal-learning-path-progress', { replace: true });
           return;
         }
 
@@ -142,7 +142,7 @@ const LoginPage = () => {
           console.warn('[DEBUG] No BC resource found, still navigating.');
         }
 
-        navigate('/learning-dashboard-homepage', { replace: true });
+        navigate( '/personal-learning-path-progress', { replace: true });
       }
     };
 
@@ -180,7 +180,7 @@ const LoginPage = () => {
       await getUserResourceByEmail(email);
     }
 
-    navigate('/learning-dashboard-homepage', { replace: true });
+    navigate( '/personal-learning-path-progress', { replace: true });
   } catch (err) {
     console.error('[DEBUG] Azure login error:', err);
     setError(err.message || 'Login failed. Please try again.');
@@ -232,7 +232,7 @@ const LoginPage = () => {
       // BC lookup before navigating
       await getUserResourceByEmail(userData.email);
 
-      navigate('/learning-dashboard-homepage', { replace: true });
+      navigate( '/personal-learning-path-progress', { replace: true });
     } catch (err) {
       console.error('[DEBUG] Demo login error:', err);
       setError(err.message || 'Demo login failed');
