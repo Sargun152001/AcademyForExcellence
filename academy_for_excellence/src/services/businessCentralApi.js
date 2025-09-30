@@ -916,17 +916,8 @@ const generateBookingNo = () => {
 
 export const createBooking = async (bookingData) => {
   try {
-    const { courseId, bookingDetails = {}, isDirectBooking, userId } = bookingData;
+    const { courseId, bookingDetails = {}, userId } = bookingData;
 
-    const scheduleID = generateScheduleId();
-    //  const bookingNo = generateBookingNo();
-
-    // Validate required IDs
-    if (!scheduleID || !courseId) {
-      throw new Error("scheduleID and courseId are required to create a booking");
-    }
-
-    // Build nominees array safely
     const nominees = Array.isArray(bookingDetails.nominees)
       ? bookingDetails.nominees.map((nominee) => ({
           name: nominee?.name || "",
@@ -936,17 +927,13 @@ export const createBooking = async (bookingData) => {
         }))
       : [];
 
-    // Handle notificationPreferences: string or array
     const notificationPreferences = Array.isArray(bookingDetails.notificationPreferences)
       ? bookingDetails.notificationPreferences
       : typeof bookingDetails.notificationPreferences === "string"
       ? [bookingDetails.notificationPreferences]
       : [];
 
-    // Build payload using camelCase for BC API
     const payload = {
-      // bookingNo,
-      scheduleID,
       courseId,
       userId: userId || "1",
       bookingDate: new Date().toISOString(),
@@ -966,13 +953,15 @@ export const createBooking = async (bookingData) => {
       ...(bookingDetails.specialRequirements && { specialRequirements: bookingDetails.specialRequirements }),
 
       ...(notificationPreferences.length && { notificationPreferences }),
+
       ...(bookingDetails.preferredDate && { preferredDate: bookingDetails.preferredDate }),
-      ...(bookingDetails.preferredTime && { preferredTime: bookingDetails.preferredTime }),
+      ...(bookingDetails.startTime && { startTime: bookingDetails.startTime }),
+      ...(bookingDetails.finishTime && { finishTime: bookingDetails.finishTime }),
     };
 
-    console.log("📡 Booking Payload Sent (camelCase):", payload);
+    console.log("📤 Payload sent to BC:", JSON.stringify(payload, null, 2));
 
-const response = await fetch(`${BACKEND_URL}/api/Bookings`, {
+    const response = await fetch(`${BACKEND_URL}/api/Bookings`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -981,14 +970,8 @@ const response = await fetch(`${BACKEND_URL}/api/Bookings`, {
       body: JSON.stringify(payload),
     });
 
-    if (!response.ok) {
-      const text = await response.text();
-      console.error("❌ Backend response:", text);
-      throw new Error(`Failed to create booking: ${response.status} ${text}`);
-    }
-
     const result = await response.json();
-    console.log("✅ Booking created:", result);
+    console.log("📥 Response from BC:", JSON.stringify(result, null, 2));
     return result;
   } catch (error) {
     console.error("❌ Error creating booking:", error);
@@ -1627,7 +1610,7 @@ export const getAssessmentsAndFeedbacks = async (resourceEmail) => {
         id: item.systemId,
         bookingId: item.bookingId,
         email: item.email,
-        // scheduleId: item.scheduleID,
+        scheduleId: item.scheduleID,
         courseId: item.courseId,
         courseName: item.courseTitle || course?.name,
         date: item.preferredDate,

@@ -1,4 +1,4 @@
-import React, { useState,useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
@@ -11,9 +11,9 @@ const BookingForm = ({ selectedCourse, selectedSlot, onSubmit, onCancel, isDirec
     courseTitle: '',
     preferredDate: '',
     courseId: '',
-    preferredTime: '',
-    attendeeType: 'self',
-    nomineeEmail: '',
+    startTime: '',
+    finishTime: '',
+    // attendeeType: 'self',
     specialRequirements: '',
     dietaryRestrictions: '',
     accessibilityNeeds: '',
@@ -23,49 +23,93 @@ const BookingForm = ({ selectedCourse, selectedSlot, onSubmit, onCancel, isDirec
     notificationPreferences: {
       email: true,
       sms: false,
-      whatsapp: true
-    }
+      whatsapp: true,
+    },
   });
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [courseOptions, setCourseOptions] = useState([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
-const generateScheduleId = () => {
-  return Math.floor(Math.random() * 1000000); // random 6-digit number
+
+  const [resources, setResources] = useState([]);
+  const [selectedResourceIds, setSelectedResourceIds] = useState([]);
+  const [loadingResources, setLoadingResources] = useState(false);
+  const [resourceError, setResourceError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const BACKEND_URL = 'https://academyforexcellence-backend-ywc2.onrender.com';
+
+  // Fetch resources if attendeeType is nominee
+useEffect(() => {
+  const fetchResources = async () => {
+    setLoadingResources(true);
+    setResourceError(null);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/Resources`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Resources API error: ${res.status} - ${text}`);
+      }
+      const data = await res.json();
+      setResources(data?.value || []);
+    } catch (err) {
+      setResourceError(err.message);
+    } finally {
+      setLoadingResources(false);
+    }
+  };
+
+  // Always fetch resources now
+  fetchResources();
+}, []);
+
+
+  // Helper to create a unique key for each resource
+const getResourceKey = (res, index) => {
+  if (res.employeeCode) return `emp-${res.employeeCode}`;
+  if (res.eMail) return `email-${res.eMail}`;
+  return `idx-${index}`; // fallback
 };
 
+const toggleResourceSelection = (resourceId) => {
+  setSelectedResourceIds((prev) =>
+    prev.includes(resourceId)
+      ? prev.filter((id) => id !== resourceId)
+      : [...prev, resourceId]
+  );
+};
 
-useEffect(() => {
-  if (selectedCourse) {
-    setFormData(prev => ({
-      ...prev,
-      courseId: selectedCourse.id,
-      courseTitle: selectedCourse.title || selectedCourse.name, // depending on your API field
-    }));
-  }
-}, [selectedCourse]);
+  // Pre-fill course if selected
+  useEffect(() => {
+    if (selectedCourse) {
+      setFormData((prev) => ({
+        ...prev,
+        courseId: selectedCourse.id,
+        courseTitle: selectedCourse.title || selectedCourse.name,
+      }));
+    }
+  }, [selectedCourse]);
 
-
-
-  // Fetch courses dynamically for direct booking
+  // Fetch courses dynamically
   useEffect(() => {
     const fetchCourses = async () => {
       setLoadingCourses(true);
       try {
-        const courses = await getCourses(); // You can pass filters if needed
-        const options = courses.map(course => ({
+        const courses = await getCourses();
+        const options = courses.map((course) => ({
           value: course.id,
-          label: course.name
+          label: course.name,
         }));
         setCourseOptions(options);
       } catch (err) {
-        console.error("Failed to fetch courses:", err);
+        console.error('Failed to fetch courses:', err);
       } finally {
         setLoadingCourses(false);
       }
     };
-
     if (isDirectBooking) {
       fetchCourses();
     }
@@ -74,7 +118,7 @@ useEffect(() => {
   const attendeeTypeOptions = [
     { value: 'self', label: 'Self Enrollment' },
     { value: 'nominee', label: 'Nominate Team Member' },
-    { value: 'group', label: 'Group Booking (3+ people)' }
+    { value: 'group', label: 'Group Booking (3+ people)' },
   ];
 
   const dietaryOptions = [
@@ -83,148 +127,146 @@ useEffect(() => {
     { value: 'vegan', label: 'Vegan' },
     { value: 'halal', label: 'Halal only' },
     { value: 'gluten-free', label: 'Gluten-free' },
-    { value: 'other', label: 'Other (specify in notes)' }
+    { value: 'other', label: 'Other (specify in notes)' },
   ];
 
-  // Course options for direct booking
-  // const courseOptions = [
-  //   { value: 'project-management', label: 'Advanced Project Management for Large-Scale Construction' },
-  //   { value: 'safety-compliance', label: 'Safety Compliance & Risk Management in Construction' },
-  //   { value: 'digital-construction', label: 'Digital Construction Technologies & BIM Implementation' },
-  //   { value: 'leadership', label: 'Leadership Excellence in Construction Teams' },
-  //   { value: 'quality-control', label: 'Quality Control & Assurance in Construction' },
-  //   { value: 'sustainable-construction', label: 'Sustainable Construction Practices' }
-  // ];
-
-  // Time slot options for direct booking
-  const timeSlotOptions = [
-    { value: '09:00', label: '9:00 AM - Full Day Session' },
-    { value: '14:00', label: '2:00 PM - Afternoon Session' },
-    { value: '10:00', label: '10:00 AM - Morning Session' },
-    { value: '15:00', label: '3:00 PM - Late Afternoon Session' }
+  const timeOptions = [
+    { value: '09:00', label: '09:00 AM' },
+    { value: '10:00', label: '10:00 AM' },
+    { value: '11:00', label: '11:00 AM' },
+    { value: '12:00', label: '12:00 PM' },
+    { value: '13:00', label: '01:00 PM' },
+    { value: '14:00', label: '02:00 PM' },
+    { value: '15:00', label: '03:00 PM' },
+    { value: '16:00', label: '04:00 PM' },
+    { value: '17:00', label: '05:00 PM' },
   ];
 
- const handleInputChange = (field, value) => {
-  // Ensure date fields are always in YYYY-MM-DD string format
-  if (field === 'preferredDate') {
-    // If value is null/undefined, store empty string
-    value = value ? value : '';
-  }
-
-  setFormData(prev => ({
-    ...prev,
-    [field]: value
-  }));
-
-  // Clear error when user types/selects
-  if (errors?.[field]) {
-    setErrors(prev => ({
-      ...prev,
-      [field]: ''
-    }));
-  }
-};
-
+  const handleInputChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (errors?.[field]) {
+      setErrors((prev) => ({ ...prev, [field]: '' }));
+    }
+  };
 
   const handleNotificationChange = (type, checked) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       notificationPreferences: {
-        ...prev?.notificationPreferences,
-        [type]: checked
-      }
+        ...prev.notificationPreferences,
+        [type]: checked,
+      },
     }));
   };
 
   const validateForm = () => {
     const newErrors = {};
 
-    // Direct booking validation
     if (isDirectBooking) {
-      if (!formData?.courseTitle) {
-        newErrors.courseTitle = 'Please select a course';
-      }
-      if (!formData?.preferredDate) {
-        newErrors.preferredDate = 'Please select a preferred date';
-      }
-      if (!formData?.preferredTime) {
-        newErrors.preferredTime = 'Please select a preferred time';
+      if (!formData?.courseTitle) newErrors.courseTitle = 'Please select a course';
+      if (!formData?.preferredDate) newErrors.preferredDate = 'Please select a preferred date';
+      if (!formData?.startTime) newErrors.startTime = 'Please select a start time';
+      if (!formData?.finishTime) newErrors.finishTime = 'Please select a finish time';
+      if (formData.startTime && formData.finishTime && formData.finishTime <= formData.startTime) {
+        newErrors.finishTime = 'Finish time must be after start time';
       }
     }
 
-    if (formData?.attendeeType === 'nominee' && !formData?.nomineeEmail) {
-      newErrors.nomineeEmail = 'Nominee email is required';
+    if (formData?.attendeeType === 'nominee' && selectedResourceIds.length === 0) {
+      newErrors.selectedResourceIds = 'Please select at least one resource';
     }
 
-    if (!formData?.emergencyContact?.trim()) {
+    if (!formData?.emergencyContact?.trim())
       newErrors.emergencyContact = 'Emergency contact name is required';
-    }
-
-    if (!formData?.emergencyPhone?.trim()) {
+    if (!formData?.emergencyPhone?.trim())
       newErrors.emergencyPhone = 'Emergency contact phone is required';
-    }
-
-    if (!formData?.agreedToTerms) {
+    if (!formData?.agreedToTerms)
       newErrors.agreedToTerms = 'You must agree to the terms and conditions';
-    }
 
     setErrors(newErrors);
-    return Object.keys(newErrors)?.length === 0;
+    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e?.preventDefault();
-    
-    if (!validateForm()) {
-      // Scroll to first error
-      const firstErrorElement = document.querySelector('[data-error="true"]');
-      if (firstErrorElement) {
-        firstErrorElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      return;
+const sanitizeForJSON = (obj) => {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj === 'string' || typeof obj === 'number' || typeof obj === 'boolean') return obj;
+  if (Array.isArray(obj)) return obj.map(sanitizeForJSON);
+  if (typeof obj === 'object') {
+    const sanitized = {};
+    for (const key in obj) {
+      if (!obj.hasOwnProperty(key)) continue;
+      const value = obj[key];
+      if (typeof value === 'function') continue;          // skip functions
+      if (value instanceof Element) continue;            // skip DOM nodes
+      if (value?._reactInternals || value?.__reactFiber$) continue; // skip React fiber/circular
+      sanitized[key] = sanitizeForJSON(value);
     }
-
-    setIsSubmitting(true);
-    
-    try {
-     await onSubmit({
-    courseId: formData.courseId || selectedCourse?.id,
-    bookingDetails: formData,
-    isDirectBooking,
-  });
-    } catch (error) {
-      console.error('Booking submission error:', error);
-      alert('There was an error processing your booking. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Show placeholder only for regular booking when course/slot not selected
-  if (!isDirectBooking && (!selectedCourse || !selectedSlot)) {
-    return (
-      <div className="bg-card rounded-xl construction-shadow-premium p-8 text-center">
-        <div className="max-w-md mx-auto">
-          <Icon name="Calendar" size={64} className="text-professional-gray mx-auto mb-6 opacity-50" />
-          <h3 className="text-xl font-heading font-semibold text-authority-charcoal mb-3">
-            Select Course & Time Slot
-          </h3>
-          <p className="text-professional-gray mb-6">
-            Please select a course and available time slot to proceed with booking. Use the course cards above to choose your training session.
-          </p>
-          <div className="bg-muted rounded-lg p-4">
-            <h4 className="font-medium text-authority-charcoal mb-2">Quick Steps:</h4>
-            <ol className="text-sm text-professional-gray text-left space-y-1">
-              <li>1. Choose a course from the list above</li>
-              <li>2. Select an available date from the calendar</li>
-              <li>3. Pick a time slot that works for you</li>
-              <li>4. Complete this booking form</li>
-            </ol>
-          </div>
-        </div>
-      </div>
-    );
+    return sanitized;
   }
+  return undefined;
+};
+
+const handleSubmit = async (e) => {
+  e?.preventDefault();
+
+  if (!validateForm()) {
+    const firstErrorElement = document.querySelector('[data-error="true"]');
+    if (firstErrorElement)
+      firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  setIsSubmitting(true);
+
+  try {
+    console.log("🔹 Selected Resource IDs:", selectedResourceIds);
+
+    // Map selected resources into nominees
+    const nomineeList = selectedResourceIds.map((id) => {
+      const res = resources.find((r, idx) => getResourceKey(r, idx) === id);
+      console.log(`Mapped ID ${id} →`, res);
+
+      return {
+        name: res?.employeeName || res?.name || 'Unnamed',
+        email: res?.eMail || '',
+        phone: res?.phone || '',
+        organization: res?.organization || '',
+      };
+    });
+
+    const bookingPayload = {
+      courseId: formData.courseId || selectedCourse?.id,
+      userId: '1',
+      bookingDate: new Date().toISOString(),
+      status: 'Pending',
+      emergencyContact: formData.emergencyContact,
+      emergencyPhone: formData.emergencyPhone,
+      preferredDate: formData.preferredDate,
+      startTime: formData.startTime || '',   // ✅ send as separate field
+  finishTime: formData.finishTime || '',
+      attendeeType: 'Individual',
+      dietaryRestrictions: formData.dietaryRestrictions || '',
+      accessibilityNeeds: formData.accessibilityNeeds || '',
+      notes: formData.specialRequirements || '',
+      notificationPreferences: { ...formData.notificationPreferences },
+      ...(nomineeList.length && { nominees: nomineeList }),
+    };
+
+    console.log('📤 Payload sent to BC:', bookingPayload);
+
+    await onSubmit({
+      courseId: formData.courseId || selectedCourse?.id,
+      bookingDetails: bookingPayload,
+      isDirectBooking,
+    });
+  } catch (error) {
+    console.error('Booking submission error:', error);
+    alert('There was an error processing your booking. Please try again.');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   return (
     <div className="bg-card rounded-xl construction-shadow-premium p-6">
@@ -237,9 +279,9 @@ useEffect(() => {
         </Button>
       </div>
 
-      {/* Enhanced Booking Summary - Only show for regular booking */}
+      {/* Booking Summary for regular booking */}
       {!isDirectBooking && selectedCourse && selectedSlot && (
-        <div className="bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-lg p-6 mb-8">
+        <div className="bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-lg p-6 mb-6">
           <div className="flex items-start space-x-4">
             <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
               <Icon name="BookOpen" size={24} className="text-primary-foreground" />
@@ -262,7 +304,9 @@ useEffect(() => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-professional-gray font-medium">Time:</span>
-                    <span className="text-authority-charcoal font-semibold">{selectedSlot?.time}</span>
+                    <span className="text-authority-charcoal font-semibold">
+                      {selectedSlot?.startTime} - {selectedSlot?.finishTime}
+                    </span>
                   </div>
                 </div>
                 <div className="space-y-3">
@@ -286,125 +330,148 @@ useEffect(() => {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Course Selection - Enhanced for direct booking */}
+        {/* Direct Booking Section */}
         {isDirectBooking && (
           <div className="space-y-6">
-            <div className="bg-accent/10 border border-accent/20 rounded-lg p-4">
-              <div className="flex items-center space-x-3 mb-3">
-                <Icon name="Info" size={20} className="text-accent" />
-                <h4 className="font-semibold text-authority-charcoal">Course Selection</h4>
-              </div>
-              <p className="text-sm text-professional-gray">
-                Choose your preferred course, date, and time. We'll confirm availability and send you a booking confirmation.
-              </p>
-            </div>
-            
             <Select
-  label="Select Course"
-  description="Choose the course you want to schedule"
-  options={courseOptions} // [{ value: course.id, label: course.name }]
-  value={formData?.courseId} // ✅ will now show the pre-selected one
-  onChange={(value) => {
-    const selected = courseOptions.find(c => c.value === value);
-    setFormData(prev => ({
-      ...prev,
-      courseId: value,
-      courseTitle: selected?.label,
-    }));
-  }}
-  error={errors?.courseId}
-  required
-  data-error={!!errors?.courseId}
-/>
-
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             <Input
-  label="Preferred Date"
-  type="date"
-  value={formData.preferredDate || ''} // ensure it's always a string
-  onChange={(e) => handleInputChange('preferredDate', e.target.value)}
-  error={errors?.preferredDate}
-  min={new Date().toISOString().split('T')[0]} // today
-  required
-  data-error={!!errors?.preferredDate}
-  description="Select your preferred training date"
-/>
-
-              <Select
-                label="Preferred Time"
-                description="Select your preferred time slot"
-                options={timeSlotOptions}
-                value={formData?.preferredTime}
-                onChange={(value) => handleInputChange('preferredTime', value)}
-                error={errors?.preferredTime}
+              label="Select Course"
+              description="Choose the course you want to schedule"
+              options={courseOptions}
+              value={formData?.courseId}
+              onChange={(value) => {
+                const selected = courseOptions.find((c) => c.value === value);
+                setFormData((prev) => ({
+                  ...prev,
+                  courseId: value,
+                  courseTitle: selected?.label,
+                }));
+              }}
+              error={errors?.courseId}
+              required
+              data-error={!!errors?.courseId}
+            />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Input
+                label="Preferred Date"
+                type="date"
+                value={formData.preferredDate || ''}
+                onChange={(e) => handleInputChange('preferredDate', e.target.value)}
+                error={errors?.preferredDate}
+                min={new Date().toISOString().split('T')[0]}
                 required
-                data-error={!!errors?.preferredTime}
+                data-error={!!errors?.preferredDate}
+                description="Select your preferred training date"
+              />
+              <Select
+                label="Start Time"
+                description="Select when your training session starts"
+                options={timeOptions}
+                value={formData?.startTime}
+                onChange={(value) => handleInputChange('startTime', value)}
+                error={errors?.startTime}
+                required
+                data-error={!!errors?.startTime}
+              />
+              <Select
+                label="Finish Time"
+                description="Select when your training session ends"
+                options={timeOptions}
+                value={formData?.finishTime}
+                onChange={(value) => handleInputChange('finishTime', value)}
+                error={errors?.finishTime}
+                required
+                data-error={!!errors?.finishTime}
               />
             </div>
           </div>
         )}
 
-        {/* Enhanced Attendee Information Section */}
-        <div className="space-y-6">
-          <div className="border-b border-border pb-3">
-            <h4 className="font-heading font-semibold text-authority-charcoal text-lg">
-              Attendee Information
-            </h4>
-            <p className="text-sm text-professional-gray mt-1">
-              Please provide details about who will be attending this training session.
+        {/* Booking Type
+        <Select
+          label="Booking Type"
+          description="Choose who will attend this training session"
+          options={attendeeTypeOptions}
+          value={formData?.attendeeType}
+          onChange={(value) => handleInputChange('attendeeType', value)}
+          required
+        /> */}
+
+        {/* Nominee Section */}
+       <div className="bg-muted/50 rounded-lg p-4 border border-border">
+  <div className="flex items-center space-x-2 mb-3">
+    <Icon name="User" size={20} className="text-primary" />
+    <h5 className="font-medium text-authority-charcoal">Nominate Resources</h5>
+  </div>
+
+  <Input
+    label="Search Resource"
+    placeholder="Type employee name or email..."
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+  />
+
+  {loadingResources ? (
+    <p className="text-sm text-gray-500">Loading resources...</p>
+  ) : resourceError ? (
+    <p className="text-sm text-red-500">Error: {resourceError}</p>
+  ) : resources.length === 0 ? (
+    <p className="text-sm text-gray-500">No resources available</p>
+  ) : (
+    <ul className="space-y-2 max-h-60 overflow-y-auto">
+     {resources
+  .filter((res) => {
+    if (!searchTerm) return true;
+    const name = res.employeeName || res.name || '';
+    const email = res.eMail || '';
+    return (
+      name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  })
+  .slice(0, 4)
+  .map((res, index) => {
+    const key = getResourceKey(res, index);
+
+    return (
+      <li key={key}>
+        <label className="flex items-center justify-between p-2 border rounded-lg bg-white cursor-pointer">
+          <div>
+            <p className="font-medium text-sm text-authority-charcoal">
+              {res.employeeName || res.name || 'Unnamed'} (
+              {res.eMail || 'No email'})
+            </p>
+            <p className="text-xs text-gray-500">
+              {res.designation || ''}{' '}
+              {res.resourceGroupNo ? `| Group: ${res.resourceGroupNo}` : ''}
             </p>
           </div>
-
-          <Select
-            label="Booking Type"
-            description="Choose who will attend this training session"
-            options={attendeeTypeOptions}
-            value={formData?.attendeeType}
-            onChange={(value) => handleInputChange('attendeeType', value)}
-            required
+          <input
+            type="checkbox"
+            checked={selectedResourceIds.includes(key)}
+            onChange={() => toggleResourceSelection(key)}
+            className="h-4 w-4 accent-primary"
           />
+        </label>
+      </li>
+    );
+  })}
 
-          {/* Enhanced Nominee Email Section */}
-          {formData?.attendeeType === 'nominee' && (
-            <div className="bg-muted/50 rounded-lg p-4 border border-border">
-              <div className="flex items-center space-x-2 mb-3">
-                <Icon name="User" size={20} className="text-primary" />
-                <h5 className="font-medium text-authority-charcoal">Nominee Details</h5>
-              </div>
-              <Input
-                label="Nominee Email Address"
-                type="email"
-                placeholder="colleague@company.com"
-                description="Email of the person you're nominating for this course"
-                value={formData?.nomineeEmail}
-                onChange={(e) => handleInputChange('nomineeEmail', e?.target?.value)}
-                error={errors?.nomineeEmail}
-                required
-                data-error={!!errors?.nomineeEmail}
-              />
-            </div>
-          )}
-        </div>
+    </ul>
+  )}
+  {errors?.selectedResourceIds && (
+    <p className="text-sm text-red-500 mt-2">{errors.selectedResourceIds}</p>
+  )}
+</div>
 
-        {/* Enhanced Emergency Contact Section */}
-        <div className="space-y-6">
-          <div className="border-b border-border pb-3">
-            <h4 className="font-heading font-semibold text-authority-charcoal text-lg">
-              Emergency Contact
-            </h4>
-            <p className="text-sm text-professional-gray mt-1">
-              Required for all training sessions for safety purposes.
-            </p>
-          </div>
-
+        {/* Emergency Contact Section */}
+        <div className="space-y-4">
+          <h4 className="font-semibold text-authority-charcoal">Emergency Contact</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Input
               label="Emergency Contact Name"
-              type="text"
               placeholder="Full name"
               value={formData?.emergencyContact}
-              onChange={(e) => handleInputChange('emergencyContact', e?.target?.value)}
+              onChange={(e) => handleInputChange('emergencyContact', e.target.value)}
               error={errors?.emergencyContact}
               required
               data-error={!!errors?.emergencyContact}
@@ -412,10 +479,9 @@ useEffect(() => {
             />
             <Input
               label="Emergency Contact Phone"
-              type="tel"
               placeholder="+971 50 123 4567"
               value={formData?.emergencyPhone}
-              onChange={(e) => handleInputChange('emergencyPhone', e?.target?.value)}
+              onChange={(e) => handleInputChange('emergencyPhone', e.target.value)}
               error={errors?.emergencyPhone}
               required
               data-error={!!errors?.emergencyPhone}
@@ -424,17 +490,9 @@ useEffect(() => {
           </div>
         </div>
 
-        {/* Enhanced Special Requirements Section */}
-        <div className="space-y-6">
-          <div className="border-b border-border pb-3">
-            <h4 className="font-heading font-semibold text-authority-charcoal text-lg">
-              Special Requirements
-            </h4>
-            <p className="text-sm text-professional-gray mt-1">
-              Help us provide the best training experience for you.
-            </p>
-          </div>
-
+        {/* Special Requirements Section */}
+        <div className="space-y-4">
+          <h4 className="font-semibold text-authority-charcoal">Special Requirements</h4>
           <Select
             label="Dietary Requirements"
             description="Please specify any dietary restrictions for catered sessions"
@@ -442,105 +500,48 @@ useEffect(() => {
             value={formData?.dietaryRestrictions}
             onChange={(value) => handleInputChange('dietaryRestrictions', value)}
           />
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Input
               label="Accessibility Needs"
-              type="text"
               placeholder="Any accessibility accommodations needed"
-              description="Wheelchair access, hearing assistance, etc."
               value={formData?.accessibilityNeeds}
-              onChange={(e) => handleInputChange('accessibilityNeeds', e?.target?.value)}
+              onChange={(e) => handleInputChange('accessibilityNeeds', e.target.value)}
             />
-            
             <Input
-              label="Additional Notes"
-              type="text"
-              placeholder="Any other special requirements or notes"
-              description="Optional additional information"
+              label="Other Special Requirements / Notes"
+              placeholder="Add any other requirements or notes"
               value={formData?.specialRequirements}
-              onChange={(e) => handleInputChange('specialRequirements', e?.target?.value)}
+              onChange={(e) => handleInputChange('specialRequirements', e.target.value)}
             />
           </div>
         </div>
 
-        {/* Enhanced Notification Preferences Section */}
-        <div className="space-y-6">
-          <div className="border-b border-border pb-3">
-            <h4 className="font-heading font-semibold text-authority-charcoal text-lg">
-              Communication Preferences
-            </h4>
-            <p className="text-sm text-professional-gray mt-1">
-              Choose how you'd like to receive updates about your booking.
-            </p>
-          </div>
-
-          <div className="bg-muted/30 rounded-lg p-4 space-y-4">
+        {/* Notification Preferences */}
+        <div className="space-y-2">
+          <h4 className="font-semibold text-authority-charcoal">Notification Preferences</h4>
+          {['email', 'sms', 'whatsapp'].map((type) => (
             <Checkbox
-              label="Email notifications"
-              description="Course reminders, updates, and confirmations via email"
-              checked={formData?.notificationPreferences?.email}
-              onChange={(e) => handleNotificationChange('email', e?.target?.checked)}
+              key={type}
+              label={`Receive ${type.toUpperCase()} notifications`}
+              checked={formData.notificationPreferences[type]}
+              onChange={(checked) => handleNotificationChange(type, checked)}
             />
-            <Checkbox
-              label="SMS notifications"
-              description="Text message reminders and important updates (standard rates may apply)"
-              checked={formData?.notificationPreferences?.sms}
-              onChange={(e) => handleNotificationChange('sms', e?.target?.checked)}
-            />
-            <Checkbox
-              label="WhatsApp notifications"
-              description="Updates and reminders via WhatsApp Business"
-              checked={formData?.notificationPreferences?.whatsapp}
-              onChange={(e) => handleNotificationChange('whatsapp', e?.target?.checked)}
-            />
-          </div>
+          ))}
         </div>
 
-        {/* Enhanced Terms Agreement */}
-        <div className="space-y-6">
-          <div className="bg-accent/10 border border-accent/20 rounded-lg p-4">
-            <Checkbox
-              label="I agree to the terms and conditions"
-              description="By checking this box, you agree to our booking policy, cancellation terms, and privacy policy"
-              checked={formData?.agreedToTerms}
-              onChange={(e) => handleInputChange('agreedToTerms', e?.target?.checked)}
-              error={errors?.agreedToTerms}
-              required
-              data-error={!!errors?.agreedToTerms}
-            />
-            <div className="mt-3 pt-3 border-t border-accent/20">
-              <p className="text-xs text-professional-gray">
-                <strong>Cancellation Policy:</strong> Free cancellation up to 24 hours before the session.
-                <br />
-                <strong>Privacy:</strong> We protect your data according to our privacy policy.
-              </p>
-            </div>
-          </div>
-        </div>
+        {/* Terms & Conditions */}
+        <Checkbox
+          label="I agree to the terms and conditions"
+          checked={formData.agreedToTerms}
+          onChange={(checked) => handleInputChange('agreedToTerms', checked)}
+          error={errors?.agreedToTerms}
+          required
+          data-error={!!errors?.agreedToTerms}
+        />
 
-        {/* Enhanced Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-border">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            className="sm:w-auto"
-            disabled={isSubmitting}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            loading={isSubmitting}
-            iconName="Calendar"
-            iconPosition="left"
-            className="sm:flex-1 bg-primary hover:bg-primary/90"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Processing...' : (isDirectBooking ? 'Schedule Course' : 'Confirm Booking')}
-          </Button>
-        </div>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Submitting...' : isDirectBooking ? 'Schedule Course' : 'Confirm Booking'}
+        </Button>
       </form>
     </div>
   );
