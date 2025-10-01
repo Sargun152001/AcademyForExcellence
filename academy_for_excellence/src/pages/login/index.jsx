@@ -142,7 +142,9 @@ const LoginPage = () => {
           console.warn('[DEBUG] No BC resource found, still navigating.');
         }
 
-        navigate( '/personal-learning-path-progress', { replace: true });
+        // navigate( '/personal-learning-path-progress', { replace: true });
+window.location.href = '/personal-learning-path-progress';
+
       }
     };
 
@@ -180,7 +182,9 @@ const LoginPage = () => {
       await getUserResourceByEmail(email);
     }
 
-    navigate( '/personal-learning-path-progress', { replace: true });
+    // navigate( '/personal-learning-path-progress', { replace: true });
+window.location.href = '/personal-learning-path-progress';
+
   } catch (err) {
     console.error('[DEBUG] Azure login error:', err);
     setError(err.message || 'Login failed. Please try again.');
