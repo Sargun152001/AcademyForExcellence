@@ -21,8 +21,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
       items: [
         { name: 'Schedule', path: '/schedule-management-booking', icon: 'Calendar' },
         { name: 'Assessments', path: '/assessment-feedback-center', icon: 'ClipboardCheck' },
-        // ✅ NEW TAB ADDED HERE
-        { name: 'Resources', path: '/management-resources', icon: 'FolderOpen' },
+        { name: 'Resources', path: '/management-resources', icon: 'Users' },
       ]
     },
     // {
