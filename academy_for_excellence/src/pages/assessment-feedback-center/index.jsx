@@ -285,7 +285,7 @@ const AssessmentFeedbackCenter = () => {
         // await startAssessment(courseId);
         // alert(`Assessment "${assessment?.courseName}" started successfully!\n\nThe assessment session has been logged in Business Central.\nReminder: You have ${assessment?.duration} minutes to complete this assessment.`);
 
-        const resourceId = getResourceId();
+        const resourceId = geteId();
 
         setSelectedAssessmentForForm({
           ...assessment,

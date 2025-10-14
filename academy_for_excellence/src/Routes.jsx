@@ -5,6 +5,8 @@ import ErrorBoundary from "components/ErrorBoundary";
 import ProtectedRoute from "components/ProtectedRoute";
 import AzureAuthProvider from "components/AzureAuthProvider";
 import NotFound from "pages/NotFound";
+import ResourceListPage from './components/ui/ResourceListPage';
+import ResourceProgressPage from './components/ui/ResourceProgressPage';
 import LoginPage from './pages/login';
 import CommunityLearningHub from './pages/community-learning-hub';
 import AssessmentFeedbackCenter from './pages/assessment-feedback-center';
@@ -124,6 +126,23 @@ const Routes = () => {
                 </ProtectedRoute>
               } 
             />
+             <Route
+              path="/management-resources"
+              element={
+                <ProtectedRoute>
+                  <ResourceListPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/resource-progress/:id"
+              element={
+                <ProtectedRoute>
+                  <ResourceProgressPage />
+                </ProtectedRoute>
+              }
+            />
+
             <Route path="*" element={<NotFound />} />
           </RouterRoutes>
         </ErrorBoundary>

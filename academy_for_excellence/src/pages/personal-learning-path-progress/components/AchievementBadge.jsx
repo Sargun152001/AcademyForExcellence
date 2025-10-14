@@ -29,10 +29,10 @@ const AchievementBadge = ({ achievement, size = 'default', showDetails = true })
   };
 
   return (
-    <div className={`group cursor-pointer construction-transition ${showDetails ? 'hover:scale-105' : ''}`}>
+    <div className="relative group cursor-pointer">
       {/* Badge Icon */}
       <div className="relative mb-3">
-        <div className={`${getBadgeSize()} ${getBadgeColor(achievement?.category)} rounded-full flex items-center justify-center construction-shadow-lg`}>
+        <div className={`${getBadgeSize()} ${getBadgeColor(achievement?.category)} rounded-full flex items-center justify-center transition-transform group-hover:scale-105`}>
           <Icon 
             name={achievement?.icon} 
             size={getIconSize()} 
@@ -52,9 +52,10 @@ const AchievementBadge = ({ achievement, size = 'default', showDetails = true })
           <div className="absolute -top-2 -right-2 w-4 h-4 bg-action-orange rounded-full animate-pulse"></div>
         )}
       </div>
+
       {showDetails && (
         <div className="text-center">
-          <h4 className="font-semibold text-authority-charcoal text-sm mb-1 group-hover:text-primary construction-transition">
+          <h4 className="font-semibold text-authority-charcoal text-sm mb-1 group-hover:text-primary transition-colors">
             {achievement?.title}
           </h4>
           <p className="text-xs text-professional-gray mb-2">
@@ -72,9 +73,10 @@ const AchievementBadge = ({ achievement, size = 'default', showDetails = true })
           </div>
         </div>
       )}
+
       {/* Tooltip for small badges */}
       {!showDetails && (
-        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-authority-charcoal text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 construction-transition pointer-events-none whitespace-nowrap z-50">
+        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-authority-charcoal text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
           <div className="font-medium">{achievement?.title}</div>
           <div className="text-xs opacity-80">{achievement?.description}</div>
           <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-authority-charcoal"></div>
