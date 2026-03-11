@@ -2,13 +2,19 @@ import React, { useEffect, useState } from "react";
 import Icon from "../../../components/AppIcon";
 import {
   getCertificates,
-  getUserBookings
+  getUserBookings,
+  getSubmittedAssessments,
+  getCourseAssessments
 } from "../../../services/businessCentralApi";
 
 const ProgressOverview = ({ overviewData }) => {
 
   const [bookings, setBookings] = useState([]);
   const [metrics, setMetrics] = useState([]);
+  const [assessmentData, setAssessmentData] = useState({
+    total: 0,
+    submitted: 0
+  });
 
   // ---------------- GET RESOURCE ID ----------------
   const getResourceId = () => {
@@ -55,6 +61,7 @@ const ProgressOverview = ({ overviewData }) => {
     if (cleanStatus === "in progress") return "in-progress";
 
     return "locked";
+
   };
 
   // ---------------- FETCH BOOKINGS ----------------
@@ -84,15 +91,14 @@ const ProgressOverview = ({ overviewData }) => {
 
           let computedStatus = "pending";
 
-          if (bookingDate && bookingDate < today) {
+          if (bookingDate && bookingDate < today)
             computedStatus = "completed";
-          }
-          else if (bookingDate && bookingDate >= today) {
+          else if (bookingDate && bookingDate >= today)
             computedStatus = "upcoming";
-          }
 
           return {
             bookingId: b.bookingId,
+            courseId: Number(b.courseId), // normalize here
             date: bookingDate,
             duration,
             status: computedStatus
@@ -102,6 +108,11 @@ const ProgressOverview = ({ overviewData }) => {
 
         console.log("[DEBUG] Mapped bookings:", normalized);
         console.log("[DEBUG] Total bookings:", normalized.length);
+
+        console.log(
+          "[DEBUG] Course IDs from bookings:",
+          normalized.map(b => b.courseId)
+        );
 
         setBookings(normalized);
 
@@ -117,6 +128,120 @@ const ProgressOverview = ({ overviewData }) => {
 
   }, []);
 
+  // ---------------- FETCH ASSESSMENTS ----------------
+  useEffect(() => {
+
+    const loadAssessments = async () => {
+
+      const resourceId = getResourceId();
+      if (!resourceId) return;
+
+      if (!bookings.length) return;
+
+      try {
+
+        const answerRows = await getSubmittedAssessments(resourceId);
+
+        console.log("[DEBUG] Raw answer rows:", answerRows);
+
+        const rows = Array.isArray(answerRows?.value)
+          ? answerRows.value
+          : Array.isArray(answerRows)
+          ? answerRows
+          : [];
+
+        console.log("[DEBUG] Total answer rows:", rows.length);
+
+        // ---------------- SUBMITTED COURSES ----------------
+        const submittedCourses = new Set(
+          rows.map((r) => Number(r.courseId))
+        );
+
+        const submittedAssessments = submittedCourses.size;
+
+        console.log(
+          "[DEBUG] Submitted courseIds:",
+          [...submittedCourses]
+        );
+
+        // ---------------- UNIQUE BOOKED COURSES ----------------
+        const uniqueBookedCourses = [
+          ...new Set(
+            bookings
+              .map((b) => Number(b.courseId))
+              .filter((id) => !isNaN(id))
+          )
+        ];
+
+        console.log(
+          "[DEBUG] Unique booked courseIds:",
+          uniqueBookedCourses
+        );
+
+        console.log(
+          "[DEBUG] Unique booked courses count:",
+          uniqueBookedCourses.length
+        );
+
+        // ---------------- TOTAL ASSESSMENTS ----------------
+        let totalAssessments = 0;
+
+        for (const courseId of uniqueBookedCourses) {
+
+          try {
+
+            console.log(
+              `📡 Checking assessments for courseId: ${courseId}`
+            );
+
+            const questions = await getCourseAssessments(courseId);
+
+            console.log(
+              `📡 Questions returned for course ${courseId}:`,
+              questions.length
+            );
+
+            if (questions && questions.length > 0) {
+
+              totalAssessments++;
+
+              console.log(
+                `✅ Course ${courseId} has assessment`
+              );
+
+            }
+
+          } catch (err) {
+
+            console.warn(
+              "⚠️ Failed fetching assessments for course:",
+              courseId
+            );
+
+          }
+
+        }
+
+        console.log("🎯 FINAL Total Assessments:", totalAssessments);
+        console.log("🎯 FINAL Submitted Assessments:", submittedAssessments);
+
+        setAssessmentData({
+          total: totalAssessments,
+          submitted: submittedAssessments
+        });
+
+      } catch (err) {
+
+        console.error("❌ Failed to fetch assessments:", err);
+
+      }
+
+    };
+
+    loadAssessments();
+
+  }, [bookings]);
+
   // ---------------- LOAD CERTIFICATES + METRICS ----------------
   useEffect(() => {
 
@@ -127,16 +252,11 @@ const ProgressOverview = ({ overviewData }) => {
 
       try {
 
-        console.log("[DEBUG] Overview Data received:", overviewData);
-
-        // -------- FETCH CERTIFICATES --------
         const certs = await getCertificates(resourceId);
 
         const allCerts = Array.isArray(certs?.value)
           ? certs.value
           : certs || [];
-
-        console.log("[DEBUG] Certificates fetched:", allCerts.length);
 
         const completedCerts = allCerts.filter(
           (c) => normalizeCertStatus(c.status) === "completed"
@@ -148,9 +268,6 @@ const ProgressOverview = ({ overviewData }) => {
 
         const totalCerts = allCerts.length;
 
-        // -------- BOOKINGS METRICS --------
-        console.log("[DEBUG] Raw bookings received:", bookings);
-
         const totalBookings = bookings.length;
 
         const completedBookings = bookings.filter(
@@ -161,7 +278,6 @@ const ProgressOverview = ({ overviewData }) => {
           (b) => b.status === "upcoming"
         ).length;
 
-        // -------- LEARNING HOURS --------
         const totalHours = bookings.reduce(
           (sum, b) => sum + b.duration,
           0
@@ -175,25 +291,6 @@ const ProgressOverview = ({ overviewData }) => {
           .filter((b) => b.status === "upcoming")
           .reduce((sum, b) => sum + b.duration, 0);
 
-        console.log(
-          "[DEBUG] Learning Hours:",
-          "Completed:", completedHours,
-          "Remaining:", remainingHours,
-          "Total:", totalHours
-        );
-
-        // -------- ASSESSMENT DEBUG LOGS --------
-        console.log(
-          "[DEBUG] Total Assessments:",
-          overviewData?.totalSkills || 0
-        );
-
-        console.log(
-          "[DEBUG] Submitted Assessments:",
-          overviewData?.skillAssessments || 0
-        );
-
-        // -------- METRICS --------
         const metricsData = [
 
           {
@@ -241,16 +338,16 @@ const ProgressOverview = ({ overviewData }) => {
           {
             id: "skill-assessments",
             title: "Skill Assessments",
-            value: overviewData?.skillAssessments || 0,
-            total: overviewData?.totalSkills || 0,
+            value: assessmentData.submitted,
+            total: assessmentData.total,
             icon: "Target",
             color: "confidence-teal",
-            trend: "+2 completed",
+            trend: `${assessmentData.total - assessmentData.submitted} remaining`,
             progress:
-              overviewData?.totalSkills > 0
+              assessmentData.total > 0
                 ? Math.round(
-                    (overviewData.skillAssessments /
-                      overviewData.totalSkills) * 100
+                    (assessmentData.submitted /
+                      assessmentData.total) * 100
                   )
                 : 0
           }
@@ -269,7 +366,7 @@ const ProgressOverview = ({ overviewData }) => {
 
     loadData();
 
-  }, [overviewData, bookings]);
+  }, [bookings, assessmentData]);
 
   // ---------------- COLOR CLASSES ----------------
   const getColorClasses = (color) => {
@@ -277,17 +374,15 @@ const ProgressOverview = ({ overviewData }) => {
     const colorMap = {
 
       success: "text-success bg-success/10 border-success/20",
-
       accent: "text-accent bg-accent/10 border-accent/20",
-
       primary: "text-primary bg-primary/10 border-primary/20",
-
       "confidence-teal":
         "text-confidence-teal bg-confidence-teal/10 border-confidence-teal/20"
 
     };
 
     return colorMap[color] || colorMap.primary;
+
   };
 
   // ---------------- UI ----------------
@@ -332,60 +427,9 @@ const ProgressOverview = ({ overviewData }) => {
 
             </div>
 
-            <div className="space-y-3">
-
-              <h3 className="font-medium text-authority-charcoal">
-                {metric.title}
-              </h3>
-
-              <div className="space-y-2">
-
-                <div className="flex justify-between text-sm">
-
-                  <span className="text-professional-gray">
-                    Progress
-                  </span>
-
-                  <span className="font-medium text-authority-charcoal">
-                    {percentage}%
-                  </span>
-
-                </div>
-
-                <div className="w-full bg-border rounded-full h-2">
-
-                  <div
-                    className={`h-2 rounded-full construction-transition ${
-                      metric.color === "success"
-                        ? "bg-success"
-                        : metric.color === "accent"
-                        ? "bg-accent"
-                        : metric.color === "primary"
-                        ? "bg-primary"
-                        : "bg-confidence-teal"
-                    }`}
-                    style={{ width: `${percentage}%` }}
-                  />
-
-                </div>
-
-              </div>
-
-              <div className="flex items-center space-x-2">
-
-                <Icon
-                  name="TrendingUp"
-                  size={14}
-                  className="text-success"
-                />
-
-                <span className="text-sm text-professional-gray">
-                  {metric.trend}
-                </span>
-
-              </div>
-
-            </div>
+            <h3 className="font-medium text-authority-charcoal">
+              {metric.title}
+            </h3>
 
           </div>
 

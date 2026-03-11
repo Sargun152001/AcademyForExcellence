@@ -152,9 +152,12 @@ const CourseEnrollment = () => {
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
-        <title>Enroll in {course?.title} | Academy for Excellence</title>
-        <meta name="description" content={`Complete your enrollment for ${course?.title}. Join thousands of professionals advancing their careers.`} />
-      </Helmet>
+  <title>{`Enroll in ${course?.title || "Course"} | Academy for Excellence`}</title>
+  <meta
+    name="description"
+    content={`Complete your enrollment for ${course?.title || "this course"}. Join thousands of professionals advancing their careers.`}
+  />
+</Helmet>
       <Header />
       <div className="flex pt-16">
         <Sidebar 

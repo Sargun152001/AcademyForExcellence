@@ -10,6 +10,7 @@ import CourseCard from './components/CourseCard';
 import CourseListItem from './components/CourseListItem';
 import Button from '../../components/ui/Button';
 import Icon from '../../components/AppIcon';
+import { useNavigate } from "react-router-dom";
 import { getCourses } from "../../services/businessCentralApi"; 
 
 
@@ -19,6 +20,7 @@ const CourseCatalogDiscovery = () => {
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('relevance');
   const [viewMode, setViewMode] = useState('grid');
+  const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState('all');
   const [filters, setFilters] = useState({});
   const [wishlistedCourses, setWishlistedCourses] = useState([]);
@@ -488,13 +490,18 @@ const categories = useMemo(() => {
   };
 
   const handleEnroll = (courseId) => {
-    navigate(`/course-catalog-discovery/enrollment/${courseId}`, {
-      state: {
-        course: allCourses?.find(course => course?.id?.toString() === courseId?.toString()) ||
-               featuredCourses?.find(course => course?.id === courseId)
-      }
-    });
-  };
+
+  const selectedCourse =
+    allCourses?.find(c => String(c?.id) === String(courseId)) ||
+    featuredCourses?.find(c => String(c?.id) === String(courseId));
+
+  navigate(`/course-catalog-discovery/enrollment/${courseId}`, {
+    state: {
+      course: selectedCourse
+    }
+  });
+
+};
 
   const handleWishlist = (courseId) => {
     setWishlistedCourses(prev =>

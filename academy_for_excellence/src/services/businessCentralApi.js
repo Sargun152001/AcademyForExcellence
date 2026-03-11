@@ -1843,6 +1843,44 @@ export const submitAssessmentResourceAnswers = async (data) => {
 
 };
 
+export const getSubmittedAssessments = async (resourceId) => {
+  try {
+
+    const params = new URLSearchParams();
+
+    params.append("$filter", `resourceNo eq '${resourceId}'`);
+
+    let url = `${BACKEND_URL}/api/answers?${params.toString()}`;
+
+    url = appendEnvironmentParams(url);
+
+    console.log("📡 Full Answers URL:", url);
+
+    const res = await fetch(url, {
+      headers: { Accept: "application/json" },
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Backend error: ${res.status} ${text}`);
+    }
+
+    const data = await res.json();
+
+    const rows = data?.value || [];
+
+    console.log("[DEBUG] Raw answer rows:", rows);
+    console.log("[DEBUG] Total answer rows:", rows.length);
+
+    return rows;
+
+  } catch (error) {
+
+    console.error("Error fetching assessments:", error);
+    return [];
+
+  }
+};
 /**
  * Request course refund
  */

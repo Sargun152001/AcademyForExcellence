@@ -1,10 +1,13 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import Image from '../../../components/AppImage';
 import Button from '../../../components/ui/Button';
 
 const CourseCard = ({ course, onEnroll, onWishlist, isWishlisted = false }) => {
+
+  const navigate = useNavigate();   // ✅ ADDED
+
   const getDifficultyColor = (level) => {
     switch (level) {
       case 'Foundation': return 'bg-green-100 text-green-800';
@@ -24,6 +27,18 @@ const CourseCard = ({ course, onEnroll, onWishlist, isWishlisted = false }) => {
         className={i < Math.floor(rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}
       />
     ));
+  };
+
+  // ✅ ENROLL BUTTON HANDLER
+  const handleEnrollClick = () => {
+
+    // existing logic if present
+    if (onEnroll) {
+      onEnroll(course?.id);
+    }
+
+    // navigate to enrollment form
+    navigate(`/course-enrollment/${course?.id}`);
   };
 
   return (
@@ -62,8 +77,10 @@ const CourseCard = ({ course, onEnroll, onWishlist, isWishlisted = false }) => {
           </div>
         )}
       </div>
+
       {/* Course Content */}
       <div className="p-6">
+
         {/* Category & Duration */}
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm font-medium text-primary bg-primary/10 px-2 py-1 rounded">
@@ -96,7 +113,7 @@ const CourseCard = ({ course, onEnroll, onWishlist, isWishlisted = false }) => {
           </div>
           <div>
             <p className="text-sm font-medium text-authority-charcoal">
-              {course?.instructor.name}
+              {course?.instructor?.name}
             </p>
             <p className="text-xs text-professional-gray">
               {course?.instructor?.title}
@@ -177,21 +194,26 @@ const CourseCard = ({ course, onEnroll, onWishlist, isWishlisted = false }) => {
               {course?.price === 0 ? 'Free' : `$${course?.price}`}
             </span>
           </div>
+
           <div className="flex items-center space-x-2">
             <Link to={`/course-catalog-discovery/course/${course?.id}`}>
               <Button variant="outline" size="sm">
                 View Details
               </Button>
             </Link>
+
+            {/* ✅ UPDATED ENROLL BUTTON */}
             <Button
               variant="default"
               size="sm"
-              onClick={() => onEnroll(course?.id)}
+              onClick={handleEnrollClick}
             >
               Enroll Now
             </Button>
+
           </div>
         </div>
+
       </div>
     </div>
   );

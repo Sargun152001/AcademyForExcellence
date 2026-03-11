@@ -95,6 +95,14 @@ const Routes = () => {
               } 
             />
             <Route 
+  path="/course-enrollment/:courseId"
+  element={
+    <ProtectedRoute>
+      <CourseEnrollment />
+    </ProtectedRoute>
+  }
+/>
+            <Route 
               path="/course-catalog-discovery/enrollment-success" 
               element={
                 <ProtectedRoute>
