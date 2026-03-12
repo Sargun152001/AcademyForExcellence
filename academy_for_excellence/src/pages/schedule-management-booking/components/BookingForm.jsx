@@ -479,7 +479,7 @@ const BookingForm = ({ selectedCourse, selectedSlot, onSubmit, onCancel, isDirec
           )}
         </div>
 
-        {/* Emergency Contact Section */}
+        {/* Emergency Contact Section
         <div className="space-y-4">
           <h4 className="font-semibold text-authority-charcoal">Emergency Contact</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -504,7 +504,7 @@ const BookingForm = ({ selectedCourse, selectedSlot, onSubmit, onCancel, isDirec
               description="Phone number with country code"
             />
           </div>
-        </div>
+        </div> */}
 
         {/* Special Requirements Section */}
         <div className="space-y-4">
@@ -532,7 +532,7 @@ const BookingForm = ({ selectedCourse, selectedSlot, onSubmit, onCancel, isDirec
           </div>
         </div>
 
-        {/* Notification Preferences */}
+        {/* Notification Preferences
         <div className="space-y-2">
           <h4 className="font-semibold text-authority-charcoal">Notification Preferences</h4>
           {['email', 'sms', 'whatsapp'].map((type) => (
@@ -543,7 +543,7 @@ const BookingForm = ({ selectedCourse, selectedSlot, onSubmit, onCancel, isDirec
               onChange={(checked) => handleNotificationChange(type, checked)}
             />
           ))}
-        </div>
+        </div> */}
 
         {/* Terms & Conditions */}
         <Checkbox

@@ -7,6 +7,7 @@ import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import CalendarView from './components/CalendarView';
+import { getRecommendedCoursesForUsers } from "services/businessCentralApi";
 import CourseCard from './components/CourseCard';
 import BookingForm from './components/BookingForm';
 import FilterPanel from './components/FilterPanel';
@@ -32,6 +33,7 @@ const ScheduleManagementBooking = () => {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [bookings, setBookings] = useState([]);
+  const [recommendedCourseIds, setRecommendedCourseIds] = useState([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [bookingsError, setBookingsError] = useState(null);
   const [showDirectBookingForm, setShowDirectBookingForm] = useState(false);
@@ -49,6 +51,75 @@ const ScheduleManagementBooking = () => {
     availableOnly: true,
     newCoursesOnly: false
   });
+
+
+
+  const getUserId = () => {
+  try {
+    const userData = localStorage.getItem("userData");
+    const userResource = localStorage.getItem("userResource");
+
+    if (userResource) {
+      const resource = JSON.parse(userResource);
+      return resource.id;
+    } else if (userData) {
+      const user = JSON.parse(userData);
+      return user.id;
+    }
+
+    console.warn("[DEBUG] No user ID found in localStorage");
+    return null;
+  } catch (err) {
+    console.error("[DEBUG] Error getting user ID:", err);
+    return null;
+  }
+};
+
+
+useEffect(() => {
+  const fetchRecommendedCourses = async () => {
+    try {
+
+      const userId = getUserId();
+
+      if (!userId) {
+        console.warn("[DEBUG] No userId found");
+        return;
+      }
+
+      console.log("[DEBUG] Fetching recommended courses for:", userId);
+
+      const coursesData = await getRecommendedCoursesForUsers(userId);
+
+      console.log("[DEBUG] Recommended courses:", coursesData);
+
+      if (coursesData && coursesData.length > 0) {
+
+        const ids = coursesData.map(course => course.id);
+
+        console.log("[DEBUG] Recommended Course IDs:", ids);
+
+        setRecommendedCourseIds(ids);
+
+      }
+
+    } catch (err) {
+      console.error("[ERROR] Failed to fetch recommended courses", err);
+    }
+  };
+
+  fetchRecommendedCourses();
+}, []);
+
+const handleEnrollCourse = (course) => {
+  console.log("[DEBUG] Enroll course clicked:", course);
+
+  // Example logic
+  setSelectedCourse(course);
+
+  // If you open a modal or navigate you can do it here
+  // navigate(`/course-enroll/${course.id}`);
+};
 
   // load courses...
   useEffect(() => {
@@ -623,16 +694,38 @@ console.log("Filtered courses:", filteredCourses);
                   </div>
 
                   {/* Course Grid */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {filteredCourses?.map((course) => (
-                      <CourseCard
-                        key={course?.id}
-                        course={course}
-                        isSelected={selectedCourse?.id === course.id}
-                        onScheduleCourse={() => handleDirectScheduleCourse(course)}
-                      />
-                    ))}
-                  </div>
+          
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+  {filteredCourses?.map((course) => {
+
+    const isRecommended = recommendedCourseIds.includes(course.id);
+
+    console.log(
+      "Course:",
+      course.id,
+      "Recommended:",
+      isRecommended
+    );
+
+    return (
+      <CourseCard
+        key={course?.id}
+        course={course}
+        isSelected={selectedCourse?.id === course.id}
+
+        /* 🔹 IMPORTANT FLAG */
+        isRecommended={isRecommended}
+
+        /* 🔹 HANDLERS */
+        onScheduleCourse={() => handleDirectScheduleCourse(course)}
+        onEnrollCourse={() => handleEnrollCourse(course)}
+      />
+    );
+
+  })}
+
+</div>
 
                           {/* Selected Course Scheduling
                   {selectedCourse && (

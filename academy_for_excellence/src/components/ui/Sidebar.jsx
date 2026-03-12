@@ -128,14 +128,14 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
               {shouldShowText && <span className="ml-3">Settings</span>}
             </Button>
            
-            <Button
+            {/* <Button
               variant="ghost"
               className={`w-full justify-start ${!shouldShowText ? 'px-3' : ''}`}
               title={isCollapsed && !isHovered ? 'Help & Support' : ''}
             >
               <Icon name="HelpCircle" size={20} className="flex-shrink-0" />
               {shouldShowText && <span className="ml-3">Help & Support</span>}
-            </Button>
+            </Button> */}
           </div>
  
           {/* User Progress Summary */}

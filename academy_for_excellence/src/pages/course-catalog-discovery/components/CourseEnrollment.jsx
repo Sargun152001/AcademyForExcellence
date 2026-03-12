@@ -169,7 +169,7 @@ const CourseEnrollment = () => {
           {/* Back Navigation */}
           <div className="bg-white border-b border-border p-4">
             <div className="max-w-4xl mx-auto">
-              <Button
+              {/* <Button
                 variant="ghost"
                 onClick={handleBackToCourse}
                 iconName="ArrowLeft"
@@ -177,7 +177,7 @@ const CourseEnrollment = () => {
                 className="mb-2"
               >
                 Back to Course Details
-              </Button>
+              </Button> */}
               <h1 className="text-2xl font-heading font-bold text-authority-charcoal">
                 Course Enrollment
               </h1>

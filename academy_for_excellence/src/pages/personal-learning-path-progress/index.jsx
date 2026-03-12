@@ -487,7 +487,7 @@ useEffect(() => {
     { id: 'overview', label: 'Overview', icon: 'LayoutDashboard' },
     { id: 'learning-path', label: 'Learning Path', icon: 'Route' },
     { id: 'skills', label: 'Skills Progress', icon: 'TrendingUp' },
-    { id: 'achievements', label: 'Achievements', icon: 'Award' },
+    // { id: 'achievements', label: 'Achievements', icon: 'Award' },
     { id: 'certifications', label: 'Certifications', icon: 'Certificate' },
     { id: 'activity', label: 'KPIs', icon: 'Activity' },
    { id: 'submitted-documents', label: 'Submitted Documents', icon: 'Document' }
