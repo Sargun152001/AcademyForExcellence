@@ -174,7 +174,7 @@ const SearchHeader = ({
         </div>
 
         {/* Quick Filters */}
-        <div className="mt-4 flex flex-wrap gap-2">
+        {/* <div className="mt-4 flex flex-wrap gap-2">
           {[
             'Popular This Week',
             'Free Courses',
@@ -192,7 +192,7 @@ const SearchHeader = ({
               {filter}
             </Button>
           ))}
-        </div>
+        </div> */}
       </div>
     </div>
   );

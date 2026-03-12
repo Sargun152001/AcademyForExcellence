@@ -584,14 +584,14 @@ return (
                     </div>
                   </div>
 
-                  <div>
+                  {/* <div>
                     <h3 className="text-xl font-semibold text-authority-charcoal mb-4">Recent Achievements</h3>
                     <div className="grid grid-cols-3 gap-4">
                       {achievements?.slice(0, 6)?.map((achievement) => (
                         <AchievementBadge key={achievement?.id} achievement={achievement} size="small" showDetails={true} />
                       ))}
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             )}
