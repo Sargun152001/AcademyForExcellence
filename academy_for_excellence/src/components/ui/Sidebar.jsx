@@ -119,14 +119,14 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
         <div className="p-4 border-t border-border">
           {/* Quick Actions */}
           <div className="space-y-2">
-            <Button
+            {/* <Button
               variant="ghost"
               className={`w-full justify-start ${!shouldShowText ? 'px-3' : ''}`}
               title={isCollapsed && !isHovered ? 'Settings' : ''}
             >
               <Icon name="Settings" size={20} className="flex-shrink-0" />
               {shouldShowText && <span className="ml-3">Settings</span>}
-            </Button>
+            </Button> */}
            
             {/* <Button
               variant="ghost"

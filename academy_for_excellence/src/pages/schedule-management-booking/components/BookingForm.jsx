@@ -192,10 +192,10 @@ const BookingForm = ({ selectedCourse, selectedSlot, onSubmit, onCancel, isDirec
       newErrors.selectedResourceIds = 'Please select at least one resource';
     }
 
-    if (!formData?.emergencyContact?.trim())
-      newErrors.emergencyContact = 'Emergency contact name is required';
-    if (!formData?.emergencyPhone?.trim())
-      newErrors.emergencyPhone = 'Emergency contact phone is required';
+    // if (!formData?.emergencyContact?.trim())
+    //   newErrors.emergencyContact = 'Emergency contact name is required';
+    // if (!formData?.emergencyPhone?.trim())
+    //   newErrors.emergencyPhone = 'Emergency contact phone is required';
     if (!formData?.agreedToTerms)
       newErrors.agreedToTerms = 'You must agree to the terms and conditions';
 

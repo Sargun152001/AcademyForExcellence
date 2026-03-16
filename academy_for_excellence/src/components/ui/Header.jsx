@@ -129,18 +129,23 @@ const Header = () => {
                   </div>
 
                   <div className="py-2">
-                    <button
-                      className="w-full px-4 py-2 text-left text-sm hover:bg-muted construction-transition flex items-center space-x-2"
-                      onClick={() => {
-                        setShowUserMenu(false);
-                        // Add profile navigation logic here
-                      }}
-                    >
-                      <Icon name="User" size={16} className="text-professional-gray" />
-                      <span>View Profile</span>
-                    </button>
+                   <button
+  className="w-full px-4 py-2 text-left text-sm hover:bg-muted construction-transition flex items-center space-x-2"
+  onClick={() => {
+    setShowUserMenu(false);
 
-                    <button
+    if (userData?.id) {
+      navigate(`/resource-progress/${userData.id}`, { state: userData });
+    } else {
+      console.warn("User resource ID missing");
+    }
+  }}
+>
+  <Icon name="User" size={16} className="text-professional-gray" />
+  <span>View Profile</span>
+</button>
+
+                    {/* <button
                       className="w-full px-4 py-2 text-left text-sm hover:bg-muted construction-transition flex items-center space-x-2"
                       onClick={() => {
                         setShowUserMenu(false);
@@ -149,7 +154,7 @@ const Header = () => {
                     >
                       <Icon name="Settings" size={16} className="text-professional-gray" />
                       <span>Settings</span>
-                    </button>
+                    </button> */}
 
                     <div className="border-t border-border my-2"></div>
 
