@@ -3,8 +3,7 @@ import Icon from "../../../components/AppIcon";
 import {
   getCertificates,
   getUserBookings,
-  getSubmittedAssessments,
-  getCourseAssessments
+  getAssessmentsAndFeedbacks
 } from "../../../services/businessCentralApi";
 
 const ProgressOverview = ({ overviewData }) => {
@@ -16,8 +15,8 @@ const ProgressOverview = ({ overviewData }) => {
     submitted: 0
   });
 
-  // ---------------- GET RESOURCE ID ----------------
-  const getResourceId = () => {
+  // ---------------- GET RESOURCE EMAIL ----------------
+  const getResourceEmail = () => {
 
     try {
 
@@ -25,17 +24,17 @@ const ProgressOverview = ({ overviewData }) => {
 
       if (userResource) {
         const resource = JSON.parse(userResource);
-        if (resource.id) return resource.id;
+        if (resource.email) return resource.email;
       }
 
       const userData = localStorage.getItem("userData");
 
       if (userData) {
         const user = JSON.parse(userData);
-        if (user.id) return user.id;
+        if (user.email) return user.email;
       }
 
-      console.warn("[DEBUG] No resource ID found");
+      console.warn("[DEBUG] No email found");
       return null;
 
     } catch (err) {
@@ -79,7 +78,6 @@ const ProgressOverview = ({ overviewData }) => {
         const normalized = (data || []).map((b) => {
 
           const bookingDate = b.date ? new Date(b.date) : null;
-
           if (bookingDate) bookingDate.setHours(0,0,0,0);
 
           let duration = 0;
@@ -98,7 +96,7 @@ const ProgressOverview = ({ overviewData }) => {
 
           return {
             bookingId: b.bookingId,
-            courseId: Number(b.courseId), // normalize here
+            courseId: Number(b.courseId),
             date: bookingDate,
             duration,
             status: computedStatus
@@ -107,12 +105,6 @@ const ProgressOverview = ({ overviewData }) => {
         });
 
         console.log("[DEBUG] Mapped bookings:", normalized);
-        console.log("[DEBUG] Total bookings:", normalized.length);
-
-        console.log(
-          "[DEBUG] Course IDs from bookings:",
-          normalized.map(b => b.courseId)
-        );
 
         setBookings(normalized);
 
@@ -128,102 +120,65 @@ const ProgressOverview = ({ overviewData }) => {
 
   }, []);
 
-  // ---------------- FETCH ASSESSMENTS ----------------
+  // ---------------- FETCH ASSESSMENTS (FINAL FIXED LOGIC) ----------------
   useEffect(() => {
 
     const loadAssessments = async () => {
 
-      const resourceId = getResourceId();
-      if (!resourceId) return;
-
-      if (!bookings.length) return;
-
       try {
 
-        const answerRows = await getSubmittedAssessments(resourceId);
+        const email = getResourceEmail();
+        if (!email) return;
 
-        console.log("[DEBUG] Raw answer rows:", answerRows);
+        const data = await getAssessmentsAndFeedbacks(email);
 
-        const rows = Array.isArray(answerRows?.value)
-          ? answerRows.value
-          : Array.isArray(answerRows)
-          ? answerRows
-          : [];
+        console.log("[DEBUG] Assessment + Feedback Data:", data);
 
-        console.log("[DEBUG] Total answer rows:", rows.length);
+        const today = new Date();
+        today.setHours(0,0,0,0);
 
-        // ---------------- SUBMITTED COURSES ----------------
-        const submittedCourses = new Set(
-          rows.map((r) => Number(r.courseId))
-        );
+        // ✅ FILTER ONLY PAST COURSES
+        const pastCourses = (data || []).filter(course => {
+          const d = new Date(course.date);
+          d.setHours(0,0,0,0);
+          return d < today;
+        });
 
-        const submittedAssessments = submittedCourses.size;
+        // ✅ GROUP + MERGE (IMPORTANT)
+        const courseMap = {};
 
-        console.log(
-          "[DEBUG] Submitted courseIds:",
-          [...submittedCourses]
-        );
+        pastCourses.forEach(course => {
 
-        // ---------------- UNIQUE BOOKED COURSES ----------------
-        const uniqueBookedCourses = [
-          ...new Set(
-            bookings
-              .map((b) => Number(b.courseId))
-              .filter((id) => !isNaN(id))
-          )
-        ];
+          const id = Number(course.courseId);
 
-        console.log(
-          "[DEBUG] Unique booked courseIds:",
-          uniqueBookedCourses
-        );
-
-        console.log(
-          "[DEBUG] Unique booked courses count:",
-          uniqueBookedCourses.length
-        );
-
-        // ---------------- TOTAL ASSESSMENTS ----------------
-        let totalAssessments = 0;
-
-        for (const courseId of uniqueBookedCourses) {
-
-          try {
-
-            console.log(
-              `📡 Checking assessments for courseId: ${courseId}`
-            );
-
-            const questions = await getCourseAssessments(courseId);
-
-            console.log(
-              `📡 Questions returned for course ${courseId}:`,
-              questions.length
-            );
-
-            if (questions && questions.length > 0) {
-
-              totalAssessments++;
-
-              console.log(
-                `✅ Course ${courseId} has assessment`
-              );
-
-            }
-
-          } catch (err) {
-
-            console.warn(
-              "⚠️ Failed fetching assessments for course:",
-              courseId
-            );
-
+          if (!courseMap[id]) {
+            courseMap[id] = {
+              courseId: id,
+              completed: false
+            };
           }
 
-        }
+          // ✅ If ANY attempt completed → mark course completed
+          if (course.assessmentStatus === "completed") {
+            courseMap[id].completed = true;
+          }
 
-        console.log("🎯 FINAL Total Assessments:", totalAssessments);
-        console.log("🎯 FINAL Submitted Assessments:", submittedAssessments);
+        });
+
+        const mergedCourses = Object.values(courseMap);
+
+        console.log("[DEBUG] Merged courses:", mergedCourses);
+
+        // ✅ TOTAL UNIQUE COURSES
+        const totalAssessments = mergedCourses.length;
+
+        // ✅ COMPLETED COURSES
+        const submittedAssessments = mergedCourses.filter(
+          c => c.completed
+        ).length;
+
+        console.log("🎯 TOTAL Assessments:", totalAssessments);
+        console.log("🎯 COMPLETED Assessments:", submittedAssessments);
 
         setAssessmentData({
           total: totalAssessments,
@@ -232,7 +187,7 @@ const ProgressOverview = ({ overviewData }) => {
 
       } catch (err) {
 
-        console.error("❌ Failed to fetch assessments:", err);
+        console.error("❌ Failed to load assessments:", err);
 
       }
 
@@ -240,17 +195,19 @@ const ProgressOverview = ({ overviewData }) => {
 
     loadAssessments();
 
-  }, [bookings]);
+  }, []);
 
   // ---------------- LOAD CERTIFICATES + METRICS ----------------
   useEffect(() => {
 
     const loadData = async () => {
 
-      const resourceId = getResourceId();
-      if (!resourceId) return;
-
       try {
+
+        const resourceId = JSON.parse(localStorage.getItem("userResource") || "{}")?.id
+          || JSON.parse(localStorage.getItem("userData") || "{}")?.id;
+
+        if (!resourceId) return;
 
         const certs = await getCertificates(resourceId);
 
