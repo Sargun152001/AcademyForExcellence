@@ -948,26 +948,48 @@ const generateBookingNo = () => {
 
 export const createBooking = async (bookingData) => {
   try {
-    const { courseId, bookingDetails = {}, userId } = bookingData;
+    const { courseId, bookingDetails = {} } = bookingData;
+
+    // ✅ Get logged-in user resourceId
+    const getResourceId = () => {
+      try {
+        const userResource = localStorage.getItem("userResource");
+        if (userResource) return JSON.parse(userResource).id;
+
+        const userData = localStorage.getItem("userData");
+        if (userData) return JSON.parse(userData).id;
+
+        return null;
+      } catch {
+        return null;
+      }
+    };
+
+    const resourceId = getResourceId();
+
+    // 🚨 STOP if no userId
+    if (!resourceId) {
+      throw new Error("No resourceId found. Cannot create booking.");
+    }
 
     const nominees = Array.isArray(bookingDetails.nominees)
       ? bookingDetails.nominees.map((nominee) => ({
-        name: nominee?.name || "",
-        email: nominee?.email || "",
-        phone: nominee?.phone || "",
-        organization: nominee?.organization || "",
-      }))
+          name: nominee?.name || "",
+          email: nominee?.email || "",
+          phone: nominee?.phone || "",
+          organization: nominee?.organization || "",
+        }))
       : [];
 
     const notificationPreferences = Array.isArray(bookingDetails.notificationPreferences)
       ? bookingDetails.notificationPreferences
       : typeof bookingDetails.notificationPreferences === "string"
-        ? [bookingDetails.notificationPreferences]
-        : [];
+      ? [bookingDetails.notificationPreferences]
+      : [];
 
     const payload = {
       courseId,
-      userId: userId || "1",
+      userId: resourceId, // ✅ FIXED (NO DEFAULT "1")
       bookingDate: new Date().toISOString(),
       status: "Pending",
 
@@ -993,7 +1015,6 @@ export const createBooking = async (bookingData) => {
 
     console.log("📤 Payload sent to BC:", JSON.stringify(payload, null, 2));
 
-    // ✅ Add environment and company params
     let url = `${BACKEND_URL}/api/Bookings`;
     url = appendEnvironmentParams(url);
 
@@ -1010,14 +1031,13 @@ export const createBooking = async (bookingData) => {
 
     const result = await response.json();
     console.log("📥 Response from BC:", JSON.stringify(result, null, 2));
+
     return result;
   } catch (error) {
     console.error("❌ Error creating booking:", error);
     throw error;
   }
 };
-
-
 /**
  * Cancel a booking
  */
@@ -1043,14 +1063,42 @@ export const cancelBooking = async (bookingId, reason) => {
 // Fetch user bookings and merge with course data
 export const getUserBookings = async (filters = {}) => {
   try {
+    // ✅ Get resourceId from storage
+    const getResourceId = () => {
+      try {
+        const userResource = localStorage.getItem("userResource");
+        if (userResource) return JSON.parse(userResource).id;
+
+        const userData = localStorage.getItem("userData");
+        if (userData) return JSON.parse(userData).id;
+
+        return null;
+      } catch {
+        return null;
+      }
+    };
+
+    const resourceId = getResourceId();
+
+    // 🚨 If no resourceId → stop
+    if (!resourceId) {
+      console.warn("⚠️ No resourceId found, returning empty bookings");
+      return [];
+    }
+
+    // ✅ Add OData filter
+    const filterQuery = `$filter=userId eq '${resourceId}'`;
 
     const qs = toQueryString(filters);
-    let url = `${BACKEND_URL}/api/Bookings${qs}`;
+
+    // ✅ Merge filter + existing query params
+    let url = `${BACKEND_URL}/api/Bookings?${filterQuery}${qs ? `&${qs.substring(1)}` : ""}`;
 
     // Add environment and company params
     url = appendEnvironmentParams(url);
 
     console.log("📡 Full URL being called (bookings):", url);
+
     const res = await fetch(url, {
       headers: { Accept: "application/json" },
     });
@@ -1063,13 +1111,10 @@ export const getUserBookings = async (filters = {}) => {
     const data = await res.json();
     const bookings = data?.value || [];
 
-
     const courses = await getCourses();
-
 
     return bookings.map((b) => {
       const course = courses.find((c) => c.id === b.courseId);
-      const bookingDate = b.bookingDate ? new Date(b.bookingDate) : null;
 
       return {
         id: b.systemId,
@@ -1101,7 +1146,6 @@ export const getUserBookings = async (filters = {}) => {
     throw error;
   }
 };
-
 
 
 
