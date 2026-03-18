@@ -347,14 +347,14 @@ const ProgressVisualization = () => {
 
         {/* Action Button */}
         <div className="mt-4 pt-4 border-t border-border">
-          <Button 
+          {/* <Button 
             variant="outline" 
             className="w-full"
             iconName="ArrowRight"
             iconPosition="right"
           >
             Continue {currentPath?.title}
-          </Button>
+          </Button> */}
         </div>
       </div>
     </div>

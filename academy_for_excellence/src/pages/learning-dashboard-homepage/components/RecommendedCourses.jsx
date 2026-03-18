@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Image from '../../../components/AppImage';
-import { getRecommendedCoursesForUsers } from 'services/businessCentralApi';
+import { getRecommendedCoursesForUsers ,createBooking} from 'services/businessCentralApi';
 import BookingForm from '../../schedule-management-booking/components/BookingForm'; // ✅ added import
 
 const RecommendedCourses = () => {
@@ -284,10 +284,35 @@ const RecommendedCourses = () => {
               selectedSlot={null}
               isDirectBooking={true}
               onCancel={() => setShowBookingForm(false)}
-              onSubmit={(data) => {
-                console.log("Booking Submitted:", data);
-                setShowBookingForm(false);
-              }}
+           onSubmit={async (data) => {
+  try {
+    console.log("📤 Booking Data from Form:", data);
+
+    const userData = JSON.parse(localStorage.getItem("userData") || "{}");
+    const userResource = JSON.parse(localStorage.getItem("userResource") || "{}");
+
+    const userId = userResource?.id || userData?.id;
+
+    const payload = {
+      courseId: selectedCourseForBooking?.id,
+      userId: userId,
+
+      // ✅ FIXED HERE
+      bookingDetails: data.bookingDetails
+    };
+
+    console.log("🚀 Final Payload:", payload);
+
+    const res = await createBooking(payload);
+
+    console.log("✅ Booking Success:", res);
+
+    setShowBookingForm(false);
+
+  } catch (err) {
+    console.error("❌ Booking Failed:", err);
+  }
+}}
             />
 
           </div>
