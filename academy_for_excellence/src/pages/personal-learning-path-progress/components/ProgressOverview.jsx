@@ -3,7 +3,7 @@ import Icon from "../../../components/AppIcon";
 import {
   getCertificates,
   getUserBookings,
-  getAssessmentsAndFeedbacks
+  getAssessmentsAndFeedbacks // ✅ NEW API
 } from "../../../services/businessCentralApi";
 
 const ProgressOverview = ({ overviewData }) => {
@@ -17,9 +17,7 @@ const ProgressOverview = ({ overviewData }) => {
 
   // ---------------- GET RESOURCE EMAIL ----------------
   const getResourceEmail = () => {
-
     try {
-
       const userResource = localStorage.getItem("userResource");
 
       if (userResource) {
@@ -38,12 +36,9 @@ const ProgressOverview = ({ overviewData }) => {
       return null;
 
     } catch (err) {
-
       console.error("[DEBUG] Error reading localStorage:", err);
       return null;
-
     }
-
   };
 
   // ---------------- NORMALIZE CERT STATUS ----------------
@@ -60,7 +55,6 @@ const ProgressOverview = ({ overviewData }) => {
     if (cleanStatus === "in progress") return "in-progress";
 
     return "locked";
-
   };
 
   // ---------------- FETCH BOOKINGS ----------------
@@ -120,82 +114,101 @@ const ProgressOverview = ({ overviewData }) => {
 
   }, []);
 
-  // ---------------- FETCH ASSESSMENTS (FINAL FIXED LOGIC) ----------------
-  useEffect(() => {
+  // ---------------- FETCH ASSESSMENTS (FIXED) ----------------
+ useEffect(() => {
 
-    const loadAssessments = async () => {
+  const loadAssessments = async () => {
 
-      try {
+    try {
 
-        const email = getResourceEmail();
-        if (!email) return;
+const getResourceId = () => {
+  try {
+    const userResource = localStorage.getItem("userResource");
+    if (userResource) {
+      const resource = JSON.parse(userResource);
+      if (resource.id) return resource.id;
+    }
 
-        const data = await getAssessmentsAndFeedbacks(email);
+    const userData = localStorage.getItem("userData");
+    if (userData) {
+      const user = JSON.parse(userData);
+      if (user.id) return user.id;
+    }
 
-        console.log("[DEBUG] Assessment + Feedback Data:", data);
+    return null;
+  } catch {
+    return null;
+  }
+};
 
-        const today = new Date();
-        today.setHours(0,0,0,0);
+const resourceId = getResourceId();
 
-        // ✅ FILTER ONLY PAST COURSES
-        const pastCourses = (data || []).filter(course => {
-          const d = new Date(course.date);
-          d.setHours(0,0,0,0);
-          return d < today;
-        });
+const data = await getAssessmentsAndFeedbacks(resourceId);
 
-        // ✅ GROUP + MERGE (IMPORTANT)
-        const courseMap = {};
+      console.log("[DEBUG] Assessment + Feedback Data:", data);
 
-        pastCourses.forEach(course => {
+      const today = new Date();
+      today.setHours(0,0,0,0);
 
-          const id = Number(course.courseId);
+      // ✅ Only past courses
+      const pastCourses = (data || []).filter(course => {
+        const d = new Date(course.date);
+        d.setHours(0,0,0,0);
+        return d < today;
+      });
 
-          if (!courseMap[id]) {
-            courseMap[id] = {
-              courseId: id,
-              completed: false
-            };
-          }
+      // ✅ GROUP + MERGE LOGIC (IMPORTANT FIX)
+      const courseMap = {};
 
-          // ✅ If ANY attempt completed → mark course completed
-          if (course.assessmentStatus === "completed") {
-            courseMap[id].completed = true;
-          }
+      pastCourses.forEach(course => {
 
-        });
+        const id = course.courseId;
 
-        const mergedCourses = Object.values(courseMap);
+        if (!courseMap[id]) {
+          courseMap[id] = {
+            courseId: id,
+            completed: false
+          };
+        }
 
-        console.log("[DEBUG] Merged courses:", mergedCourses);
+        // ✅ If ANY record is completed → mark completed
+        if (course.assessmentStatus === "completed") {
+          courseMap[id].completed = true;
+        }
 
-        // ✅ TOTAL UNIQUE COURSES
-        const totalAssessments = mergedCourses.length;
+      });
 
-        // ✅ COMPLETED COURSES
-        const submittedAssessments = mergedCourses.filter(
-          c => c.completed
-        ).length;
+      const mergedCourses = Object.values(courseMap);
 
-        console.log("🎯 TOTAL Assessments:", totalAssessments);
-        console.log("🎯 COMPLETED Assessments:", submittedAssessments);
+      console.log("[DEBUG] Merged courses:", mergedCourses);
 
-        setAssessmentData({
-          total: totalAssessments,
-          submitted: submittedAssessments
-        });
+      // ✅ TOTAL
+      const totalAssessments = mergedCourses.length;
 
-      } catch (err) {
+      // ✅ COMPLETED
+      const submittedAssessments = mergedCourses.filter(
+        c => c.completed
+      ).length;
 
-        console.error("❌ Failed to load assessments:", err);
+      console.log("🎯 TOTAL Assessments:", totalAssessments);
+      console.log("🎯 COMPLETED Assessments:", submittedAssessments);
 
-      }
+      setAssessmentData({
+        total: totalAssessments,
+        submitted: submittedAssessments
+      });
 
-    };
+    } catch (err) {
 
-    loadAssessments();
+      console.error("❌ Failed to load assessments:", err);
 
-  }, []);
+    }
+
+  };
+
+  loadAssessments();
+
+}, []);
 
   // ---------------- LOAD CERTIFICATES + METRICS ----------------
   useEffect(() => {

@@ -1686,14 +1686,19 @@ export const getCourseAssessments = async (courseId) => {
 };
 
 
-export const getAssessmentsAndFeedbacks = async (resourceEmail) => {
+export const getAssessmentsAndFeedbacks = async (resourceId) => {
   try {
+    if (!resourceId) {
+      console.warn("⚠️ No resourceId provided");
+      return [];
+    }
 
-    const filterQuery = `$filter=email eq '${resourceEmail}'`;
+    const filterQuery = `$filter=resourceId eq '${resourceId}'`;
     let url = `${BACKEND_URL}/api/assessmentFeedbacks?${filterQuery}`;
-    // Add environment and company params
+
     url = appendEnvironmentParams(url);
-    console.log("📡 Full getAssessmentsAndFeedbacks URL being called:", url);
+
+    console.log("📡 URL:", url);
 
     const res = await fetch(url, {
       headers: { Accept: "application/json" },
@@ -1701,60 +1706,55 @@ export const getAssessmentsAndFeedbacks = async (resourceEmail) => {
 
     if (!res.ok) {
       const text = await res.text();
-      throw new Error(`Backend error for getAssessmentsAndFeedbacks: ${res.status} ${text}`);
+      throw new Error(`API Error: ${res.status} - ${text}`);
     }
 
     const data = await res.json();
+    console.log("📦 Raw API Response:", data);
 
     const arr = data?.value || [];
 
-    console.log("Raw backend response for getAssessmentsAndFeedbacks:", data);
+    if (!arr.length) {
+      console.warn("⚠️ No assessment records found");
+      return [];
+    }
 
     const courses = await getCourses();
 
-    // 3️⃣ Map bookings → normalized format
     return arr.map((item) => {
-      const course = courses.find((c) => c.id === item.courseId);
-      const bookingDate = item.bookingDate ? new Date(item.bookingDate) : null;
+      const course = courses.find(
+        (c) => String(c.id) === String(item.courseId)
+      );
 
       return {
         id: item.systemId,
         bookingId: item.bookingId,
         email: item.email,
-        scheduleId: item.scheduleID,
         courseId: item.courseId,
-        courseName: item.courseTitle || course?.name,
-        date: item.preferredDate,
-        time: item.preferredTime,
-        assessmentStatus: item.assessmentStatus?.toLowerCase(),
-        feedbackSubmitted: item.feedbackSubmitted,
-        // location: course?.location || 'Online / TBD',
-        // format: item.attendeeType || course?.format,
-        // status: item.status?.toLowerCase(),
-        // specialRequirements: item.specialRequirements || "", // ✅ fixed
-        // notes: item.notes,
-        courseDescription: item.courseDescription,
-        courseDuration: item.courseDuration,
-        instructorName: {
-          name: item.instructorName
-        },
+        courseName: item.courseTitle || course?.name || "N/A",
+        date: item.preferredDate || null,
+        assessmentStatus: item.assessmentStatus
+          ? item.assessmentStatus.toLowerCase()
+          : null,
+        feedbackSubmitted: item.feedbackSubmitted || false,
+
+        courseDescription: item.courseDescription || "",
+        courseDuration: item.courseDuration || "",
+        instructorName: item.instructorName || "",
 
         category: course?.category || null,
         level: course?.level || null,
         rating: course?.AverageRating || null,
         totalRatings: course?.TotalRatings || null,
-        createdDate: course?.CreatedDate || null,
-        lastModified: course?.LastModified || null,
         imageUrl: course?.imageUrl || null,
-        originalPrice: course?.OriginalPrice || null,
       };
     });
-
   } catch (err) {
-    console.error("❌ Error in getAssessmentsAndFeedbacks (frontend):", err);
-    throw err;
+    console.error("❌ Error in getAssessmentsAndFeedbacks:", err);
+    return [];
   }
 };
+
 
 export const submitAssessmentAnswers = async (submissionData) => {
   try {

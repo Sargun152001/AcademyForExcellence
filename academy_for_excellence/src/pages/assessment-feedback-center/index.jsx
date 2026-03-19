@@ -44,14 +44,52 @@ const AssessmentFeedbackCenter = () => {
 
   // Business Central integration hooks
   // const { isConnected, connectionStatus } = useBusinessCentral();
-  const {
-    assessments,
-    stats,
-    loading: assessmentsLoading,
-    error: assessmentsError,
-    submitAssessmentRequest,
-    startAssessment
-  } = useAssessments();
+// ✅ DEFINE FIRST
+  const getResourceId = () => {
+    try {
+      // Try userResource first
+      const userResource = localStorage.getItem('userResource');
+      if (userResource) {
+        const resource = JSON.parse(userResource);
+        if (resource.id) {
+          return resource.id;
+        }
+      }
+
+      // Try userData as fallback
+      const userData = localStorage.getItem('userData');
+      if (userData) {
+        const user = JSON.parse(userData);
+        if (user.id) {
+          return user.id;
+        }
+      }
+
+      console.warn('[DEBUG] No resource ID found in localStorage');
+      return null;
+    } catch (err) {
+      console.error('[DEBUG] Error getting resource ID from localStorage:', err);
+      return null;
+    }
+  };
+
+const resourceId = getResourceId();
+
+console.log("RESOURCE ID:", resourceId); // 👈 important for debugging
+
+
+
+// NOW use hooks
+const assessmentHook = useAssessments(resourceId) || {};
+
+const {
+  assessments = [],
+  stats = {},
+  loading: assessmentsLoading = false,
+  error: assessmentsError = null,
+  submitAssessmentRequest,
+  startAssessment
+} = assessmentHook;
   const {
     feedbackCourses,
     loading: feedbackLoading,
@@ -97,33 +135,7 @@ const AssessmentFeedbackCenter = () => {
 
 
   // Add this function alongside getResourceEmail
-  const getResourceId = () => {
-    try {
-      // Try userResource first
-      const userResource = localStorage.getItem('userResource');
-      if (userResource) {
-        const resource = JSON.parse(userResource);
-        if (resource.id) {
-          return resource.id;
-        }
-      }
 
-      // Try userData as fallback
-      const userData = localStorage.getItem('userData');
-      if (userData) {
-        const user = JSON.parse(userData);
-        if (user.id) {
-          return user.id;
-        }
-      }
-
-      console.warn('[DEBUG] No resource ID found in localStorage');
-      return null;
-    } catch (err) {
-      console.error('[DEBUG] Error getting resource ID from localStorage:', err);
-      return null;
-    }
-  };
 
 
   // NEW: Fetch assessment and feedback data on component mount
@@ -133,13 +145,14 @@ const AssessmentFeedbackCenter = () => {
         setLoading(true);
         setError(null);
 
-        const resourceEmail = getResourceEmail();
-        if (!resourceEmail) {
-          setAssessmentFeedbackData([]);
-          return;
-        }
+const resourceId = getResourceId();
 
-        const data = await getAssessmentsAndFeedbacks(resourceEmail);
+if (!resourceId) {
+  setAssessmentFeedbackData([]);
+  return;
+}
+
+const data = await getAssessmentsAndFeedbacks(resourceId);
 
         setAssessmentFeedbackData(data || []);
       } catch (err) {

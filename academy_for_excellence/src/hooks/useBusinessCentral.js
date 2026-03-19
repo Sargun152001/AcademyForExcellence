@@ -98,7 +98,7 @@ export const useBusinessCentral = () => {
 /**
  * Custom hook for fetching assessments with enhanced error handling
  */
-export const useAssessments = () => {
+export const useAssessments = (resourceId) => {
   const [assessments, setAssessments] = useState([]);
   const [stats, setStats] = useState({
     completedAssessments: 0,
@@ -118,18 +118,17 @@ export const useAssessments = () => {
       setError(null);
 
       console.log('Fetching assessments and stats...');
-      const [assessmentsData, statsData] = await Promise.all([
-        businessCentralApi?.getAssessments(),
-        businessCentralApi?.getAssessmentStats()
-      ]);
+     const assessmentsData = await businessCentralApi?.getAssessmentsAndFeedbacks(resourceId);
+
+setAssessments(assessmentsData || []);
+setStats({
+  completedAssessments: 0,
+  pendingEvaluations: 0,
+  averageScore: 0,
+  peerReviewsGiven: 0
+});
 
       setAssessments(assessmentsData || []);
-      setStats(statsData || {
-        completedAssessments: 0,
-        pendingEvaluations: 0,
-        averageScore: 0,
-        peerReviewsGiven: 0
-      });
       setLastFetchTime(new Date());
       console.log('Successfully fetched assessments and stats');
     } catch (err) {

@@ -74,8 +74,8 @@ export const useAssessments = () => {
       
       console.log('Fetching assessments and stats from mock data...');
       const [assessmentsData, statsData] = await Promise.all([
-        mockDataService?.getAssessments(),
-        mockDataService?.getAssessmentStats()
+        // mockDataService?.getAssessments(),
+        // mockDataService?.getAssessmentStats()
       ]);
       
       setAssessments(assessmentsData || []);
